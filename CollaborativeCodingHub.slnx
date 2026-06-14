@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CollaborativeCodingClient/CollaborativeCodingClient.csproj" />
+  <Project Path="CollaborativeCodingServer/CollaborativeCodingServer.csproj" />
+</Solution>
