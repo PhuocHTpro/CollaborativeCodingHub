@@ -1,4 +1,5 @@
 ﻿using CollaborativeCodingServer.Core;
+using CollaborativeCodingServer.Database;
 using System;
 
 namespace CollaborativeCodingServer
@@ -7,6 +8,12 @@ namespace CollaborativeCodingServer
     {
         static void Main(string[] args)
         {
+            DatabaseTester.Test();
+
+            // Test
+            UserRepository repo = new UserRepository();
+            Console.WriteLine(repo.UserExists("admin"));
+
             ServerManager server = new ServerManager();
 
             server.Start(5000);

@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace CollaborativeCodingServer.Models
 {
-    public class User
+    public class RegisterRequest
     {
-        public int UserID { get; set; }
-
         public string Username { get; set; }
 
         public string Password { get; set; }

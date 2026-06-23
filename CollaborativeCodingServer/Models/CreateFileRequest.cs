@@ -6,12 +6,10 @@ using System.Threading.Tasks;
 
 namespace CollaborativeCodingServer.Models
 {
-    public class User
+    public class CreateFileRequest
     {
-        public int UserID { get; set; }
+        public int ProjectID { get; set; }
 
-        public string Username { get; set; }
-
-        public string Password { get; set; }
+        public string FileName { get; set; }
     }
 }

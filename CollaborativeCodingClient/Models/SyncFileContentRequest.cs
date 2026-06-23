@@ -4,14 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CollaborativeCodingServer.Models
+namespace CollaborativeCodingClient.Models
 {
-    public class User
+    public class SyncFileContentRequest
     {
-        public int UserID { get; set; }
-
+        public int FileID { get; set; }
+        public string Content { get; set; }
         public string Username { get; set; }
-
-        public string Password { get; set; }
     }
 }
