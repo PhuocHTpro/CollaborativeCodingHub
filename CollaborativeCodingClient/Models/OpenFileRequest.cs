@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace CollaborativeCodingClient.Models
 {
-    public class LoginRequest
+    public class OpenFileRequest
     {
-        public string Username { get; set; }
-
-        public string Password { get; set; }
+        public int FileID { get; set; }
     }
 }

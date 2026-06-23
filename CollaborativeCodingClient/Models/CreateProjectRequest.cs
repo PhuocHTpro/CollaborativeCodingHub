@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace CollaborativeCodingClient.Models
 {
-    public class LoginRequest
+    public class CreateProjectRequest
     {
-        public string Username { get; set; }
+        public string ProjectName { get; set; }
 
-        public string Password { get; set; }
+        public string RoomID { get; set; }
     }
 }
+
