@@ -1,4 +1,5 @@
 using CollaborativeCodingServer.Core;
+using CollaborativeCodingServer.Models.Entities;
 using CollaborativeCodingServer.Models.Packets.Auth;
 using CollaborativeCodingServer.Network;
 using CollaborativeCodingServer.Services;
@@ -18,9 +19,10 @@ namespace CollaborativeCodingServer.Core.Handlers
         public void HandleLogin(Packet packet)
         {
             LoginRequest request = JsonHelper.Deserialize<LoginRequest>(packet.Data);
-            bool success = authService.Login(request.Username, request.Password);
-            if (success)
+            User user = authService.Login(request.Username, request.Password);
+            if (user != null)
             {
+                clientHandler.CurrentUser = user;
                 clientHandler.Username = request.Username;
                 clientHandler.SendPacket(PacketType.LOGIN_SUCCESS);
             }

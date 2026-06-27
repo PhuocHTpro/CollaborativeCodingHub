@@ -21,7 +21,7 @@ namespace CollaborativeCodingServer.Services
             return repository.Register(user);
         }
 
-        public bool Login(string username, string password)
+        public User Login(string username, string password)
         {
             return repository.Login(username, password);
         }

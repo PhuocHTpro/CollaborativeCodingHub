@@ -119,7 +119,8 @@ namespace CollaborativeCodingServer.Core
             Send(json);
         }
 
-        public string Username { get; set; } = string.Empty;
+        public string Username { get; set; }
+        public User CurrentUser { get; set; }
         public Room? CurrentRoom { get; set; }
     }
 }

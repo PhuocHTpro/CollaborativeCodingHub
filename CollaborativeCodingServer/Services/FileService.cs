@@ -6,6 +6,7 @@ namespace CollaborativeCodingServer.Services
     public class FileService
     {
         private readonly FileRepository repository = new FileRepository();
+        private readonly ReplayService replayService = new ReplayService();
 
         public bool CreateFile(int projectID, string fileName)
         {
@@ -29,9 +30,23 @@ namespace CollaborativeCodingServer.Services
             return repository.GetFileById(fileID);
         }
 
-        public bool UpdateFileContent(int fileID, string content)
+        public bool UpdateFileContent(int fileID, string content, int editedBy)
         {
-            return repository.UpdateFileContent(fileID, content);
+            bool success = repository.UpdateFileContent(fileID, content);
+
+            if (!success)
+                return false;
+
+            FileHistory history = new FileHistory
+            {
+                FileID = fileID,
+                Content = content,
+                EditedBy = editedBy,
+                ChangeSummary = "Update File"
+            };
+
+            replayService.SaveVersion(history);
+            return true;
         }
     }
 }

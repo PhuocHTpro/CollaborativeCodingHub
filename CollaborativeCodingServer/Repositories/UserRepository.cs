@@ -40,13 +40,15 @@ namespace CollaborativeCodingServer.Repositories
             return cmd.ExecuteNonQuery() > 0;
         }
 
-        public bool Login(string username, string password)
+        public User Login(string username, string password)
         {
             using SqlConnection conn = DbConnectionFactory.GetConnection();
 
             conn.Open();
 
-            string sql = @"SELECT COUNT(*) FROM Users WHERE Username = @Username AND Password = @Password";
+            string sql = @"SELECT UserID, Username, Password
+                          FROM Users
+                           WHERE Username = @Username AND Password = @Password";
 
             SqlCommand cmd = new SqlCommand(sql, conn);
 
@@ -54,9 +56,19 @@ namespace CollaborativeCodingServer.Repositories
 
             cmd.Parameters.AddWithValue("@Password", password);
 
-            int count = (int)cmd.ExecuteScalar();
+            SqlDataReader reader = cmd.ExecuteReader();
 
-            return count > 0;
+            if (reader.Read())
+            {
+                return new User
+                {
+                    UserID = Convert.ToInt32(reader["UserID"]),
+                    Username = reader["Username"].ToString(),
+                    Password = reader["Password"].ToString()
+                };
+            }
+
+            return null;
         }
     }
 }
