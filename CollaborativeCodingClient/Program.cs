@@ -1,6 +1,7 @@
-﻿using CollaborativeCodingClient.Models;
+﻿using CollaborativeCodingClient.Models.Packets.Auth;
+using CollaborativeCodingClient.Models.Packets.Project;
+using CollaborativeCodingClient.Models.Packets.Room;
 using CollaborativeCodingClient.Network;
-using CollaborativeCodingClient.Protocol;
 using System.Text;
 
 namespace CollaborativeCodingClient

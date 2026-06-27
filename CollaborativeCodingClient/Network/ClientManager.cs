@@ -1,8 +1,5 @@
-﻿using CollaborativeCodingClient.Models;
-using CollaborativeCodingClient.Protocol;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using CollaborativeCodingClient.Models.Packets.Project;
+using CollaborativeCodingClient.Network;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;

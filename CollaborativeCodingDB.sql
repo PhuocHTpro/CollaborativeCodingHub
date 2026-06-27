@@ -1,3 +1,5 @@
+
+Create database CollaborativeCodingDB;
 USE CollaborativeCodingDB;
 GO
 
@@ -61,23 +63,30 @@ CREATE TABLE ProjectFiles
 
     CreatedAt DATETIME DEFAULT GETDATE()
 );
-GO
-
-CREATE TABLE Tasks
-(
-    TaskID INT IDENTITY(1,1) PRIMARY KEY,
-
-    Title NVARCHAR(100),
-
-    Description NVARCHAR(MAX),
-
-    AssignedTo INT,
-
-    Status NVARCHAR(20)
-);
 
 -- DROP TABLE Users;
 -- DROP TABLE Projects;
 -- DROP TABLE ProjectFiles;
 -- DROP TABLE Tasks;
 -- DROP TABLE Rooms;
+
+GO
+CREATE TABLE Tasks
+(
+    TaskID INT IDENTITY(1,1) PRIMARY KEY,
+
+    ProjectID INT NOT NULL,
+
+    TaskName NVARCHAR(200) NOT NULL,
+
+    Description NVARCHAR(MAX),
+
+    AssignedTo NVARCHAR(100),
+
+    Status NVARCHAR(50),
+
+    CreatedDate DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY(ProjectID)
+    REFERENCES Projects(ProjectID)
+);

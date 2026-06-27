@@ -1,5 +1,6 @@
 ﻿using CollaborativeCodingServer.Core;
 using CollaborativeCodingServer.Database;
+using CollaborativeCodingServer.Repositories;
 using System;
 
 namespace CollaborativeCodingServer
