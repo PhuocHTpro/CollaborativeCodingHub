@@ -8,13 +8,15 @@ namespace CollaborativeCodingServer.Services
         private readonly FileRepository repository = new FileRepository();
         private readonly ReplayService replayService = new ReplayService();
 
-        public bool CreateFile(int projectID, string fileName)
+        public int CreateFile(int projectID, string fileName, int createdBy)
         {
             ProjectFile file = new ProjectFile
             {
                 ProjectID = projectID,
                 FileName = fileName,
-                Content = ""
+                Content = string.Empty,
+                CreatedBy = createdBy,
+                LastModifiedBy = createdBy
             };
 
             return repository.CreateFile(file);

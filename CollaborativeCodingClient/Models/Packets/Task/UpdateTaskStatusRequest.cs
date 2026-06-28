@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CollaborativeCodingServer.Models.Packets.Task
+namespace CollaborativeCodingClient.Models.Packets.Task
 {
     public class UpdateTaskStatusRequest
     {

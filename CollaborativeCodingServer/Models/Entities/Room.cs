@@ -15,6 +15,8 @@ namespace CollaborativeCodingServer.Models.Entities
 
         public string RoomCode { get; set; }
 
+        public int OwnerID { get; set; }
+
         public List<ClientHandler> Clients = new List<ClientHandler>();
     }
 }

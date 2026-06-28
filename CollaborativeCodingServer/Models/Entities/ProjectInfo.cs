@@ -13,5 +13,7 @@ namespace CollaborativeCodingServer.Models.Entities
         public string ProjectName { get; set; }
 
         public string RoomID { get; set; }
+
+        public int CreatedBy { get; set; }
     }
 }

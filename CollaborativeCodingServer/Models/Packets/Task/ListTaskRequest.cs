@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace CollaborativeCodingServer.Models.Packets.Task
 {
-    public class UpdateTaskStatusRequest
+    public class ListTaskRequest
     {
-        public int TaskID { get; set; }
-        public string Status { get; set; } = "";
+        public int ProjectID { get; set; }
     }
 }

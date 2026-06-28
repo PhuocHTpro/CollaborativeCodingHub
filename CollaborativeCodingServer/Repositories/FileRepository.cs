@@ -6,23 +6,29 @@ namespace CollaborativeCodingServer.Repositories
 {
     public class FileRepository
     {
-        public bool CreateFile(ProjectFile file)
+        public int CreateFile(ProjectFile file)
         {
-            using SqlConnection conn = DbConnectionFactory.GetConnection();
+            try
+            {
+                using SqlConnection conn = DbConnectionFactory.GetConnection();
+                conn.Open();
 
-            conn.Open();
+                string sql = @"INSERT INTO ProjectFiles(ProjectID, FileName, Content, CreatedBy, LastModifiedBy) OUTPUT INSERTED.FileID VALUES (@ProjectID, @FileName, @Content, @CreatedBy, @LastModifiedBy)";
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@ProjectID", file.ProjectID);
+                cmd.Parameters.AddWithValue("@FileName", file.FileName);
+                cmd.Parameters.AddWithValue("@Content", file.Content ?? string.Empty);
+                cmd.Parameters.AddWithValue("@CreatedBy", file.CreatedBy);
+                cmd.Parameters.AddWithValue("@LastModifiedBy", file.LastModifiedBy);
 
-            string sql = @"INSERT INTO ProjectFiles(ProjectID, FileName, Content) VALUES (@ProjectID, @FileName, @Content)";
-
-            SqlCommand cmd = new SqlCommand(sql, conn);
-
-            cmd.Parameters.AddWithValue("@ProjectID", file.ProjectID);
-
-            cmd.Parameters.AddWithValue("@FileName", file.FileName);
-
-            cmd.Parameters.AddWithValue("@Content", file.Content);
-
-            return cmd.ExecuteNonQuery() > 0;
+                object result = cmd.ExecuteScalar();
+                return result == null ? 0 : Convert.ToInt32(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FILE CREATE ERROR] {ex.Message}");
+                return 0;
+            }
         }
 
         public List<ProjectFile> GetFilesByProject(int projectID)

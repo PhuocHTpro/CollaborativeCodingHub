@@ -3,6 +3,7 @@ using CollaborativeCodingServer.Core;
 using CollaborativeCodingServer.Models.Entities;
 using CollaborativeCodingServer.Models.Packets.Room;
 using CollaborativeCodingServer.Network;
+using CollaborativeCodingServer.Repositories;
 using CollaborativeCodingServer.Services;
 
 namespace CollaborativeCodingServer.Core.Handlers
@@ -10,6 +11,7 @@ namespace CollaborativeCodingServer.Core.Handlers
     public class RoomHandler
     {
         private readonly ClientHandler clientHandler;
+        private readonly RoomRepository roomRepository = new RoomRepository();
 
         public RoomHandler(ClientHandler clientHandler)
         {
@@ -31,34 +33,73 @@ namespace CollaborativeCodingServer.Core.Handlers
 
         public void HandleCreateRoom(Packet packet)
         {
+            if (clientHandler.CurrentUser == null)
+            {
+                clientHandler.SendPacket(PacketType.CREATE_ROOM_FAILED);
+                return;
+            }
+
             CreateRoomRequest request = JsonHelper.Deserialize<CreateRoomRequest>(packet.Data);
+            if (string.IsNullOrWhiteSpace(request.RoomName))
+            {
+                clientHandler.SendPacket(PacketType.CREATE_ROOM_FAILED);
+                return;
+            }
+
             Room room = new Room
             {
                 RoomId = Guid.NewGuid().ToString().Substring(0, 6).ToUpper(),
-                RoomName = request.RoomName
+                RoomName = request.RoomName,
+                OwnerID = clientHandler.CurrentUser.UserID
             };
+
+            bool created = roomRepository.CreateRoom(room);
+            if (!created)
+            {
+                clientHandler.SendPacket(PacketType.CREATE_ROOM_FAILED);
+                return;
+            }
 
             room.Clients.Add(clientHandler);
             clientHandler.CurrentRoom = room;
             RoomManager.Rooms.Add(room);
-            Console.WriteLine($"[ROOM CREATED] {room.RoomName}");
+            Console.WriteLine($"[ROOM CREATED] {room.RoomName} ({room.RoomId})");
             clientHandler.SendPacket(PacketType.CREATE_ROOM_SUCCESS, room.RoomId);
         }
 
         public void HandleJoinRoom(Packet packet)
         {
+            if (clientHandler.CurrentUser == null)
+            {
+                clientHandler.SendPacket(PacketType.JOIN_ROOM_FAILED);
+                return;
+            }
+
             JoinRoomRequest request = JsonHelper.Deserialize<JoinRoomRequest>(packet.Data);
             Room room = RoomManager.Rooms.FirstOrDefault(r => r.RoomId == request.RoomId);
+            if (room == null)
+            {
+                room = roomRepository.GetRoomById(request.RoomId);
+                if (room != null)
+                {
+                    RoomManager.Rooms.Add(room);
+                }
+            }
+
             if (room == null)
             {
                 clientHandler.SendPacket(PacketType.ROOM_NOT_FOUND);
                 return;
             }
 
-            room.Clients.Add(clientHandler);
+            if (!room.Clients.Contains(clientHandler))
+            {
+                room.Clients.Add(clientHandler);
+            }
+
             clientHandler.CurrentRoom = room;
-            Console.WriteLine($"[JOIN ROOM] {room.RoomName}");
-            clientHandler.SendPacket(PacketType.JOIN_ROOM_SUCCESS);
+            Console.WriteLine($"[JOIN ROOM] {room.RoomName} ({room.RoomId})");
+            clientHandler.SendPacket(PacketType.JOIN_ROOM_SUCCESS, room.RoomId);
         }
 
         private void BroadcastToRoom(string message)

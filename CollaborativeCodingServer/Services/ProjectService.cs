@@ -7,12 +7,13 @@ namespace CollaborativeCodingServer.Services
     {
         private readonly ProjectRepository repository = new ProjectRepository();
 
-        public bool CreateProject(string projectName, string roomID)
+        public int CreateProject(string projectName, string roomID, int createdBy)
         {
             ProjectInfo project = new ProjectInfo
             {
                 ProjectName = projectName,
-                RoomID = roomID
+                RoomID = roomID,
+                CreatedBy = createdBy
             };
 
             return repository.CreateProject(project);

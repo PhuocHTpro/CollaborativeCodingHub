@@ -1,49 +1,111 @@
-﻿namespace CollaborativeCodingServer.Network
+namespace CollaborativeCodingServer.Network
 {
     public enum PacketType
     {
+        // CHAT
         CHAT,
+
+        // AUTHENTICATION
         LOGIN,
         REGISTER,
+
+        // ROOM MANAGEMENT
         CREATE_ROOM,
         JOIN_ROOM,
         LEAVE_ROOM,
+
+        // PROJECT MANAGEMENT
         CREATE_PROJECT,
-        CREATE_FILE,
         LIST_PROJECTS,
+
+        // FILE MANAGEMENT
+        CREATE_FILE,
         LIST_FILES,
         OPEN_FILE,
         UPDATE_FILE_CONTENT,
         DELETE_FILE,
+        UNLOCK_FILE,
+
+        // REALTIME SYNCHRONIZATION
         SYNC_FILE_CONTENT,
         INSERT,
         DELETE,
-        ASSIGN_TASK,
-        COMPILE,
-        // RESPONSE
 
+        // CODING REPLAY
+        LIST_HISTORY,
+        OPEN_HISTORY,
+
+        // TASK MANAGEMENT
+        CREATE_TASK,
+        LIST_TASKS,
+        UPDATE_TASK_STATUS,
+        DELETE_TASK,
+
+        // LIVE COMPILE
+        COMPILE,
+
+        // AUTH RESPONSES
         LOGIN_SUCCESS,
         LOGIN_FAILED,
 
         REGISTER_SUCCESS,
         REGISTER_FAILED,
-
+        // ROOM RESPONSES
         CREATE_ROOM_SUCCESS,
         CREATE_ROOM_FAILED,
 
         JOIN_ROOM_SUCCESS,
         JOIN_ROOM_FAILED,
 
+        // PROJECT RESPONSES
         CREATE_PROJECT_SUCCESS,
         CREATE_PROJECT_FAILED,
 
+        LIST_PROJECTS_SUCCESS,
+
+        // FILE RESPONSES
         CREATE_FILE_SUCCESS,
         CREATE_FILE_FAILED,
+
+        LIST_FILES_SUCCESS,
 
         UPDATE_FILE_SUCCESS,
         UPDATE_FILE_FAILED,
 
+        // UNLOCK FILE RESPONSES
+        UNLOCK_FILE_SUCCESS,
+        UNLOCK_FILE_FAILED,
+
+        // REPLAY RESPONSES
+        LIST_HISTORY_SUCCESS,
+        LIST_HISTORY_FAILED,
+
+        OPEN_HISTORY_SUCCESS,
+        OPEN_HISTORY_FAILED,
+
+        // TASK RESPONSES
+        CREATE_TASK_SUCCESS,
+        CREATE_TASK_FAILED,
+
+        LIST_TASKS_SUCCESS,
+        LIST_TASKS_FAILED,
+
+        UPDATE_TASK_STATUS_SUCCESS,
+        UPDATE_TASK_STATUS_FAILED,
+
+        DELETE_TASK_SUCCESS,
+        DELETE_TASK_FAILED,
+
+        // LIVE COMPILE RESPONSES
+        COMPILE_SUCCESS,
+        COMPILE_FAILED,
+
+        // COMMON ERRORS
         FILE_NOT_FOUND,
-        ROOM_NOT_FOUND
+        FILE_LOCKED,
+        ROOM_NOT_FOUND,
+        PROJECT_NOT_FOUND,
+        TASK_NOT_FOUND,
+        ACCESS_DENIED
     }
 }

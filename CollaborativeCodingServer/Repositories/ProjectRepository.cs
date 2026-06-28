@@ -6,21 +6,27 @@ namespace CollaborativeCodingServer.Repositories
 {
     public class ProjectRepository
     {
-        public bool CreateProject(ProjectInfo project)
+        public int CreateProject(ProjectInfo project)
         {
-            using SqlConnection conn = DbConnectionFactory.GetConnection();
+            try
+            {
+                using SqlConnection conn = DbConnectionFactory.GetConnection();
+                conn.Open();
 
-            conn.Open();
+                string sql = @"INSERT INTO Projects (ProjectName, RoomID, CreatedBy) OUTPUT INSERTED.ProjectID VALUES (@ProjectName, @RoomID, @CreatedBy)";
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@ProjectName", project.ProjectName);
+                cmd.Parameters.AddWithValue("@RoomID", project.RoomID);
+                cmd.Parameters.AddWithValue("@CreatedBy", project.CreatedBy);
 
-            string sql = @"INSERT INTO Projects (ProjectName, RoomID) VALUES (@ProjectName, @RoomID)";
-
-            SqlCommand cmd = new SqlCommand(sql, conn);
-
-            cmd.Parameters.AddWithValue("@ProjectName", project.ProjectName);
-
-            cmd.Parameters.AddWithValue("@RoomID", project.RoomID);
-
-            return cmd.ExecuteNonQuery() > 0;
+                object result = cmd.ExecuteScalar();
+                return result == null ? 0 : Convert.ToInt32(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PROJECT CREATE ERROR] {ex.Message}");
+                return 0;
+            }
         }
 
         public List<ProjectInfo> GetProjects()
