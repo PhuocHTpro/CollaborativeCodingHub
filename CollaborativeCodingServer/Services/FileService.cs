@@ -1,24 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CollaborativeCodingServer.Database;
-using CollaborativeCodingServer.Models;
+﻿using CollaborativeCodingServer.Models.Entities;
+using CollaborativeCodingServer.Repositories;
 
 namespace CollaborativeCodingServer.Services
 {
     public class FileService
     {
         private readonly FileRepository repository = new FileRepository();
+        private readonly ReplayService replayService = new ReplayService();
 
-        public bool CreateFile(int projectID, string fileName)
+        public int CreateFile(int projectID, string fileName, int createdBy)
         {
             ProjectFile file = new ProjectFile
             {
                 ProjectID = projectID,
                 FileName = fileName,
-                Content = ""
+                Content = string.Empty,
+                CreatedBy = createdBy,
+                LastModifiedBy = createdBy
             };
 
             return repository.CreateFile(file);
@@ -34,9 +32,23 @@ namespace CollaborativeCodingServer.Services
             return repository.GetFileById(fileID);
         }
 
-        public bool UpdateFileContent(int fileID, string content)
+        public bool UpdateFileContent(int fileID, string content, int editedBy)
         {
-            return repository.UpdateFileContent(fileID, content);
+            bool success = repository.UpdateFileContent(fileID, content);
+
+            if (!success)
+                return false;
+
+            FileHistory history = new FileHistory
+            {
+                FileID = fileID,
+                Content = content,
+                EditedBy = editedBy,
+                ChangeSummary = "Update File"
+            };
+
+            replayService.SaveVersion(history);
+            return true;
         }
     }
 }

@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CollaborativeCodingServer.Database;
-using CollaborativeCodingServer.Models;
+﻿using CollaborativeCodingServer.Models.Entities;
+using CollaborativeCodingServer.Repositories;
 
 namespace CollaborativeCodingServer.Services
 {
@@ -26,7 +21,7 @@ namespace CollaborativeCodingServer.Services
             return repository.Register(user);
         }
 
-        public bool Login(string username, string password)
+        public User Login(string username, string password)
         {
             return repository.Login(username, password);
         }
