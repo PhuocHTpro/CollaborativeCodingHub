@@ -34,7 +34,7 @@ namespace CollaborativeCodingServer.Services
 
         public bool UpdateFileContent(int fileID, string content, int editedBy)
         {
-            bool success = repository.UpdateFileContent(fileID, content);
+            bool success = repository.UpdateFileContent(fileID, content, editedBy);
 
             if (!success)
                 return false;

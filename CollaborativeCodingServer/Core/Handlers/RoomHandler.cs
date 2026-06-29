@@ -60,6 +60,10 @@ namespace CollaborativeCodingServer.Core.Handlers
                 return;
             }
 
+            if (clientHandler.CurrentRoom != null)
+            {
+                clientHandler.CurrentRoom.Clients.Remove(clientHandler);
+            }
             room.Clients.Add(clientHandler);
             clientHandler.CurrentRoom = room;
             RoomManager.Rooms.Add(room);
@@ -82,7 +86,10 @@ namespace CollaborativeCodingServer.Core.Handlers
                 room = roomRepository.GetRoomById(request.RoomId);
                 if (room != null)
                 {
-                    RoomManager.Rooms.Add(room);
+                    if (!RoomManager.Rooms.Any(r => r.RoomId == room.RoomId))
+                    {
+                        RoomManager.Rooms.Add(room);
+                    }
                 }
             }
 
@@ -94,6 +101,10 @@ namespace CollaborativeCodingServer.Core.Handlers
 
             if (!room.Clients.Contains(clientHandler))
             {
+                if (clientHandler.CurrentRoom != null && clientHandler.CurrentRoom != room)
+                {
+                    clientHandler.CurrentRoom.Clients.Remove(clientHandler);
+                }
                 room.Clients.Add(clientHandler);
             }
 
@@ -110,9 +121,12 @@ namespace CollaborativeCodingServer.Core.Handlers
                 Data = message
             };
             string json = JsonHelper.Serialize(packet);
-            foreach (ClientHandler client in clientHandler.CurrentRoom.Clients)
+            foreach (ClientHandler client in clientHandler.CurrentRoom.Clients.ToList())
             {
-                client.Send(json);
+                if (!client.Send(json))
+                {
+                    clientHandler.CurrentRoom.Clients.Remove(client);
+                }
             }
         }
     }

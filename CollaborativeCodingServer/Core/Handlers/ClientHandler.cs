@@ -154,26 +154,44 @@ namespace CollaborativeCodingServer.Core
             finally
             {
                 ReleaseFileLocks();
+                if (CurrentRoom != null)
+                {
+                    CurrentRoom.Clients.Remove(this);
+                }
                 stream.Close();
                 client.Close();
+            }
+            if (CurrentRoom != null)
+            {
+                CurrentRoom.Clients.Remove(this);
+                Console.WriteLine($"[ROOM] {Username} left room {CurrentRoom.RoomName}");
             }
         }
 
 
         private void ReleaseFileLocks()
         {
+            if (string.IsNullOrEmpty(Username)) return;
             var lockedFiles = FileLockManager.LockedFiles.Where(x => x.Value == Username).ToList();
             foreach (var item in lockedFiles)
             {
-                FileLockManager.LockedFiles.Remove(item.Key);
+                FileLockManager.LockedFiles.TryRemove(item.Key, out _);
                 Console.WriteLine($"[LOCK RELEASED] File {item.Key}");
             }
         }
 
-        public void Send(string message)
+        public bool Send(string message)
         {
-            byte[] data = Encoding.UTF8.GetBytes(message);
-            stream.Write(data, 0, data.Length);
+            try
+            {
+                byte[] data = Encoding.UTF8.GetBytes(message);
+                stream.Write(data, 0, data.Length);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public void SendPacket(PacketType type, string data = "")
@@ -191,5 +209,7 @@ namespace CollaborativeCodingServer.Core
         public string Username { get; set; }
         public User CurrentUser { get; set; }
         public Room? CurrentRoom { get; set; }
+        public int? CurrentProjectId { get; set; }
+        public int? CurrentFileId { get; set; }
     }
 }

@@ -41,6 +41,11 @@ namespace CollaborativeCodingServer.Core.Handlers
                 clientHandler.SendPacket(PacketType.CREATE_PROJECT_FAILED);
                 return;
             }
+            if (clientHandler.CurrentRoom == null || clientHandler.CurrentRoom.RoomId != request.RoomID)
+            {
+                clientHandler.SendPacket(PacketType.CREATE_PROJECT_FAILED);
+                return;
+            }
 
             int projectId = projectService.CreateProject(request.ProjectName, request.RoomID, clientHandler.CurrentUser.UserID);
             if (projectId > 0)
@@ -71,7 +76,7 @@ namespace CollaborativeCodingServer.Core.Handlers
             if (FileLockManager.LockedFiles.ContainsKey(fileId) &&
                 FileLockManager.LockedFiles[fileId] == clientHandler.Username)
             {
-                FileLockManager.LockedFiles.Remove(fileId);
+                FileLockManager.LockedFiles.TryRemove(fileId, out _);
                 Console.WriteLine($"[UNLOCK] File {fileId} unlocked by {clientHandler.Username}");
                 clientHandler.SendPacket(PacketType.UNLOCK_FILE_SUCCESS, fileId.ToString());
             }
@@ -89,19 +94,23 @@ namespace CollaborativeCodingServer.Core.Handlers
 
         public void HandleCreateFile(Packet packet)
         {
+            CreateFileRequest request = JsonHelper.Deserialize<CreateFileRequest>(packet.Data);
             if (clientHandler.CurrentUser == null)
             {
                 clientHandler.SendPacket(PacketType.CREATE_FILE_FAILED);
                 return;
             }
-
-            CreateFileRequest request = JsonHelper.Deserialize<CreateFileRequest>(packet.Data);
             if (request.ProjectID <= 0 || string.IsNullOrWhiteSpace(request.FileName))
             {
                 clientHandler.SendPacket(PacketType.CREATE_FILE_FAILED);
                 return;
             }
 
+            if (!projectService.ProjectExists(request.ProjectID))
+            {
+                clientHandler.SendPacket(PacketType.CREATE_FILE_FAILED);
+                return;
+            }
             int fileId = fileService.CreateFile(request.ProjectID, request.FileName, clientHandler.CurrentUser.UserID);
             if (fileId > 0)
             {
@@ -115,7 +124,7 @@ namespace CollaborativeCodingServer.Core.Handlers
 
         public void HandleListProjects()
         {
-            List<ProjectInfo> projects = projectService.GetProjects();
+            List<ProjectInfo> projects = projectService.GetProjects(clientHandler.CurrentRoom.RoomId);
             StringBuilder builder = new StringBuilder();
             foreach (var project in projects)
             {
@@ -139,23 +148,31 @@ namespace CollaborativeCodingServer.Core.Handlers
         public void HandleOpenFile(Packet packet)
         {
             OpenFileRequest request = JsonHelper.Deserialize<OpenFileRequest>(packet.Data);
-            if (FileLockManager.LockedFiles.ContainsKey(request.FileID) &&
-                FileLockManager.LockedFiles[request.FileID] != clientHandler.Username)
+            if (clientHandler.CurrentRoom == null)
             {
-                string owner = FileLockManager.LockedFiles[request.FileID];
-                Console.WriteLine($"[LOCKED BY] {owner}");
-                clientHandler.SendPacket(PacketType.FILE_LOCKED, owner);
+                clientHandler.SendPacket(PacketType.FILE_NOT_FOUND);
                 return;
             }
-
-            FileLockManager.LockedFiles[request.FileID] = clientHandler.Username;
+            if (!projectService.CanAccessFile(request.FileID, clientHandler.CurrentRoom.RoomId))
+            {
+                clientHandler.SendPacket(PacketType.FILE_NOT_FOUND);
+                return;
+            }
+            if (!FileLockManager.LockedFiles.TryAdd(request.FileID, clientHandler.Username))
+            {
+                string owner = FileLockManager.LockedFiles[request.FileID];
+                if (owner != clientHandler.Username)
+                {
+                    clientHandler.SendPacket(PacketType.FILE_LOCKED, owner);
+                    return;
+                }
+            }
             ProjectFile file = fileService.GetFileById(request.FileID);
             if (file == null)
             {
                 clientHandler.SendPacket(PacketType.FILE_NOT_FOUND);
                 return;
             }
-
             SyncFileContentRequest openResponse = new SyncFileContentRequest
             {
                 FileID = file.FileID,
@@ -169,6 +186,26 @@ namespace CollaborativeCodingServer.Core.Handlers
         public void HandleUpdateFileContent(Packet packet)
         {
             UpdateFileContentRequest request = JsonHelper.Deserialize<UpdateFileContentRequest>(packet.Data);
+            if (!FileLockManager.LockedFiles.ContainsKey(request.FileID))
+            {
+                clientHandler.SendPacket(PacketType.UPDATE_FILE_FAILED, "File is not locked.");
+                return;
+            }
+            if (FileLockManager.LockedFiles[request.FileID] != clientHandler.Username)
+            {
+                clientHandler.SendPacket(PacketType.UPDATE_FILE_FAILED, "You do not own this file lock.");
+                return;
+            }
+            if (clientHandler.CurrentRoom == null)
+            {
+                clientHandler.SendPacket(PacketType.UPDATE_FILE_FAILED);
+                return;
+            }
+            if (!projectService.CanAccessFile(request.FileID, clientHandler.CurrentRoom.RoomId))
+            {
+                clientHandler.SendPacket(PacketType.UPDATE_FILE_FAILED, "You do not have access to this file.");
+                return;
+            }
             bool success = fileService.UpdateFileContent(request.FileID, request.Content, clientHandler.CurrentUser.UserID);
             if (success)
             {
@@ -201,7 +238,8 @@ namespace CollaborativeCodingServer.Core.Handlers
             {
                 if (client == clientHandler)
                     continue;
-
+                if (client.CurrentFileId != request.FileID)
+                    continue;
                 client.Send(json);
             }
         }

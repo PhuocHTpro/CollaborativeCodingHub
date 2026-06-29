@@ -19,9 +19,19 @@ namespace CollaborativeCodingServer.Services
             return repository.CreateProject(project);
         }
 
-        public List<ProjectInfo> GetProjects()
+        public List<ProjectInfo> GetProjects(string roomId)
         {
-            return repository.GetProjects();
+            return repository.GetProjects(roomId);
+        }
+
+        public bool CanAccessFile(int fileId, string roomId)
+        {
+            return repository.IsFileInRoom(fileId, roomId);
+        }
+
+        public bool ProjectExists(int projectID)
+        {
+            return repository.ProjectExists(projectID);
         }
     }
 }

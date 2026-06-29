@@ -29,33 +29,48 @@ namespace CollaborativeCodingServer.Repositories
             }
         }
 
-        public List<ProjectInfo> GetProjects()
+        public List<ProjectInfo> GetProjects(string roomId)
         {
-            List<ProjectInfo> projects = new List<ProjectInfo>();
-
+            List<ProjectInfo> projects = new();
             using SqlConnection conn = DbConnectionFactory.GetConnection();
-
             conn.Open();
-
-            string sql = @"SELECT ProjectID, ProjectName, RoomID FROM Projects";
-
+            string sql = @"SELECT ProjectID, ProjectName, RoomID FROM Projects WHERE RoomID = @RoomID";
             SqlCommand cmd = new SqlCommand(sql, conn);
-
+            cmd.Parameters.AddWithValue("@RoomID", roomId);
             SqlDataReader reader = cmd.ExecuteReader();
-
             while (reader.Read())
             {
                 projects.Add(new ProjectInfo
                 {
                     ProjectID = Convert.ToInt32(reader["ProjectID"]),
-
                     ProjectName = reader["ProjectName"].ToString(),
-
                     RoomID = reader["RoomID"].ToString()
                 });
             }
-
             return projects;
+        }
+
+        public bool IsFileInRoom(int fileId, string roomId)
+        {
+            using SqlConnection conn = DbConnectionFactory.GetConnection();
+            conn.Open();
+            string sql = @"SELECT COUNT(*) FROM ProjectFiles pf INNER JOIN Projects p ON pf.ProjectID = p.ProjectID WHERE pf.FileID = @FileID AND p.RoomID = @RoomID";
+            SqlCommand cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@FileID", fileId);
+            cmd.Parameters.AddWithValue("@RoomID", roomId);
+            int count = (int)cmd.ExecuteScalar();
+            return count > 0;
+        }
+
+        public bool ProjectExists(int projectId)
+        {
+            using SqlConnection conn = DbConnectionFactory.GetConnection();
+            conn.Open();
+            string sql = @"SELECT COUNT(*) FROM Projects WHERE ProjectID = @ProjectID";
+            SqlCommand cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@ProjectID", projectId);
+            int count = (int)cmd.ExecuteScalar();
+            return count > 0;
         }
     }
 }

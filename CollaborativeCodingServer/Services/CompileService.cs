@@ -19,13 +19,14 @@ namespace CollaborativeCodingServer.Services
                 string sourceFile = Path.Combine(workPath, $"File_{fileID}.cs");
 
                 File.WriteAllText(projectFile,
-                    "<Project Sdk=\"Microsoft.NET.Sdk\">\n" +
-                    "  <PropertyGroup>\n" +
-                    "    <TargetFramework>net8.0</TargetFramework>\n" +
-                    "    <ImplicitUsings>enable</ImplicitUsings>\n" +
-                    "    <Nullable>enable</Nullable>\n" +
-                    "  </PropertyGroup>\n" +
-                    "</Project>\n");
+                     "<Project Sdk=\"Microsoft.NET.Sdk\">\n" +
+                     "  <PropertyGroup>\n" +
+                     "    <OutputType>Exe</OutputType>\n" +
+                     "    <TargetFramework>net8.0</TargetFramework>\n" +
+                     "    <ImplicitUsings>enable</ImplicitUsings>\n" +
+                     "    <Nullable>enable</Nullable>\n" +
+                     "  </PropertyGroup>\n" +
+                     "</Project>\n");
 
                 File.WriteAllText(sourceFile, content);
 
@@ -46,13 +47,39 @@ namespace CollaborativeCodingServer.Services
                 process.WaitForExit();
 
                 bool success = process.ExitCode == 0;
+
                 string combined = string.IsNullOrWhiteSpace(error)
                     ? output.Trim()
                     : output.Trim() + "\n" + error.Trim();
 
                 if (success)
                 {
-                    return new CompileResult(true, string.IsNullOrWhiteSpace(combined) ? "Compilation succeeded." : combined);
+                    ProcessStartInfo runInfo = new ProcessStartInfo
+                    {
+                        FileName = "dotnet",
+                        Arguments = "run --no-build --configuration Release",
+                        WorkingDirectory = workPath,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+                    using Process runProcess = Process.Start(runInfo)!;
+                    string runOutput = runProcess.StandardOutput.ReadToEnd();
+                    string runError = runProcess.StandardError.ReadToEnd();
+                    runProcess.WaitForExit();
+                    string result = combined;
+                    if (!string.IsNullOrWhiteSpace(runOutput))
+                    {
+                        result += "\n\n===== PROGRAM OUTPUT =====\n";
+                        result += runOutput;
+                    }
+                    if (!string.IsNullOrWhiteSpace(runError))
+                    {
+                        result += "\n\n===== RUNTIME ERROR =====\n";
+                        result += runError;
+                    }
+                    return new CompileResult(true, result);
                 }
                 return new CompileResult(false, string.IsNullOrWhiteSpace(combined) ? "Compilation failed." : combined);
             }

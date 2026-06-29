@@ -85,13 +85,14 @@ namespace CollaborativeCodingServer.Repositories
             return null;
         }
 
-        public bool UpdateFileContent(int fileID, string content)
+        public bool UpdateFileContent(int fileID, string content, int lastModifiedBy)
         {
             using SqlConnection conn = DbConnectionFactory.GetConnection();
             conn.Open();
-            string sql = @"UPDATE ProjectFiles SET Content = @Content WHERE FileID = @FileID";
+            string sql = @"UPDATE ProjectFiles SET Content = @Content, LastModifiedBy = @LastModifiedBy WHERE FileID = @FileID";
             SqlCommand cmd = new SqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@Content", content);
+            cmd.Parameters.AddWithValue("@LastModifiedBy", lastModifiedBy);
             cmd.Parameters.AddWithValue("@FileID", fileID);
             return cmd.ExecuteNonQuery() > 0;
         }
