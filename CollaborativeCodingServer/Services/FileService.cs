@@ -50,5 +50,10 @@ namespace CollaborativeCodingServer.Services
             replayService.SaveVersion(history);
             return true;
         }
+
+        public bool DeleteFile(int fileID)
+        {
+            return repository.DeleteFile(fileID);
+        }
     }
 }

@@ -18,7 +18,7 @@ namespace CollaborativeCodingClient.Network
         // ROOM MANAGEMENT
         CREATE_ROOM,
         JOIN_ROOM,
-        LEAVE_ROOM,
+        LIST_ROOM_MEMBERS,
 
         // PROJECT MANAGEMENT
         CREATE_PROJECT,
@@ -34,8 +34,6 @@ namespace CollaborativeCodingClient.Network
 
         // REALTIME SYNCHRONIZATION
         SYNC_FILE_CONTENT,
-        INSERT,
-        DELETE,
 
         // CODING REPLAY
         LIST_HISTORY,
@@ -63,17 +61,19 @@ namespace CollaborativeCodingClient.Network
         JOIN_ROOM_SUCCESS,
         JOIN_ROOM_FAILED,
 
+        LIST_ROOM_MEMBERS_SUCCESS,
+        LIST_ROOM_MEMBERS_FAILED,
+
         // PROJECT RESPONSES
         CREATE_PROJECT_SUCCESS,
         CREATE_PROJECT_FAILED,
-
-        LIST_PROJECTS_SUCCESS,
 
         // FILE RESPONSES
         CREATE_FILE_SUCCESS,
         CREATE_FILE_FAILED,
 
-        LIST_FILES_SUCCESS,
+        DELETE_FILE_SUCCESS,
+        DELETE_FILE_FAILED,
 
         UPDATE_FILE_SUCCESS,
         UPDATE_FILE_FAILED,

@@ -25,5 +25,10 @@ namespace CollaborativeCodingServer.Services
         {
             return repository.UpdateTaskStatus(taskID, status);
         }
+
+        public bool DeleteTask(int taskID)
+        {
+            return repository.DeleteTask(taskID);
+        }
     }
 }

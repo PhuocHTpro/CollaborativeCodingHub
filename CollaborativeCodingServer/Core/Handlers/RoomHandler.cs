@@ -110,7 +110,20 @@ namespace CollaborativeCodingServer.Core.Handlers
 
             clientHandler.CurrentRoom = room;
             Console.WriteLine($"[JOIN ROOM] {room.RoomName} ({room.RoomId})");
+            roomRepository.AddRoomMember(room.RoomId, clientHandler.CurrentUser.UserID);
             clientHandler.SendPacket(PacketType.JOIN_ROOM_SUCCESS, room.RoomId);
+        }
+
+        public void HandleListRoomMembers()
+        {
+            if (clientHandler.CurrentRoom == null)
+            {
+                clientHandler.SendPacket(PacketType.LIST_ROOM_MEMBERS_FAILED, "Join a room first.");
+                return;
+            }
+
+            List<RoomMemberResponse> members = roomRepository.GetRoomMembers(clientHandler.CurrentRoom.RoomId);
+            clientHandler.SendPacket(PacketType.LIST_ROOM_MEMBERS_SUCCESS, JsonHelper.Serialize(members));
         }
 
         private void BroadcastToRoom(string message)

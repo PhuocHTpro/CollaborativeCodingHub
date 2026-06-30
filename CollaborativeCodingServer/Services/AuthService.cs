@@ -25,5 +25,10 @@ namespace CollaborativeCodingServer.Services
         {
             return repository.Login(username, password);
         }
+
+        public void SetOnlineStatus(int userId, bool isOnline)
+        {
+            repository.SetOnlineStatus(userId, isOnline);
+        }
     }
 }

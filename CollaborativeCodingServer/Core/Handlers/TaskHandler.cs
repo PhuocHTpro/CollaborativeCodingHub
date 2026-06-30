@@ -19,13 +19,19 @@ namespace CollaborativeCodingServer.Core.Handlers
         public void HandleCreateTask(Packet packet)
         {
             CreateTaskRequest request = JsonHelper.Deserialize<CreateTaskRequest>(packet.Data);
+            if (clientHandler.CurrentUser == null || request.ProjectID <= 0 || string.IsNullOrWhiteSpace(request.TaskName))
+            {
+                clientHandler.SendPacket(PacketType.CREATE_TASK_FAILED);
+                return;
+            }
 
             TaskItem task = new TaskItem
             {
                 ProjectID = request.ProjectID,
                 TaskName = request.TaskName,
                 AssignedTo = request.AssignedTo,
-                Status = "Pending"
+                CreatedBy = clientHandler.CurrentUser.UserID,
+                Status = "TODO"
             };
 
             bool success = taskService.CreateTask(task);
@@ -53,10 +59,15 @@ namespace CollaborativeCodingServer.Core.Handlers
             }
 
             StringBuilder builder = new StringBuilder();
+            builder.AppendLine("TaskID | Task Name | Status | Assigned User");
+            builder.AppendLine("------------------------------------------------------------");
 
             foreach (TaskItem task in tasks)
             {
-                builder.AppendLine($"{task.TaskID} | {task.TaskName} | {task.Status}");
+                string assignedUser = task.AssignedTo.HasValue
+                    ? $"{task.AssignedTo} - {task.AssignedUsername}"
+                    : "Unassigned";
+                builder.AppendLine($"{task.TaskID} | {task.TaskName} | {task.Status} | {assignedUser}");
             }
 
             clientHandler.SendPacket(PacketType.LIST_TASKS_SUCCESS, builder.ToString());
@@ -75,6 +86,27 @@ namespace CollaborativeCodingServer.Core.Handlers
             else
             {
                 clientHandler.SendPacket(PacketType.UPDATE_TASK_STATUS_FAILED);
+            }
+        }
+
+        public void HandleDeleteTask(Packet packet)
+        {
+            DeleteTaskRequest request = JsonHelper.Deserialize<DeleteTaskRequest>(packet.Data);
+            if (request.TaskID <= 0)
+            {
+                clientHandler.SendPacket(PacketType.DELETE_TASK_FAILED, "Invalid task ID.");
+                return;
+            }
+
+            bool success = taskService.DeleteTask(request.TaskID);
+
+            if (success)
+            {
+                clientHandler.SendPacket(PacketType.DELETE_TASK_SUCCESS);
+            }
+            else
+            {
+                clientHandler.SendPacket(PacketType.DELETE_TASK_FAILED, "Task not found.");
             }
         }
     }

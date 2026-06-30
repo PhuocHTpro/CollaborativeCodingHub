@@ -96,5 +96,17 @@ namespace CollaborativeCodingServer.Repositories
             cmd.Parameters.AddWithValue("@FileID", fileID);
             return cmd.ExecuteNonQuery() > 0;
         }
+
+        public bool DeleteFile(int fileID)
+        {
+            using SqlConnection conn = DbConnectionFactory.GetConnection();
+            conn.Open();
+
+            string sql = @"DELETE FROM ProjectFiles WHERE FileID = @FileID";
+            SqlCommand cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@FileID", fileID);
+
+            return cmd.ExecuteNonQuery() > 0;
+        }
     }
 }

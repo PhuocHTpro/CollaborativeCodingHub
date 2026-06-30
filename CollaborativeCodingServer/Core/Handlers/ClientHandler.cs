@@ -3,6 +3,7 @@ using System.Text;
 using CollaborativeCodingServer.Core.Handlers;
 using CollaborativeCodingServer.Models.Entities;
 using CollaborativeCodingServer.Network;
+using CollaborativeCodingServer.Services;
 
 namespace CollaborativeCodingServer.Core
 {
@@ -89,6 +90,9 @@ namespace CollaborativeCodingServer.Core
                                 case "JOIN_ROOM":
                                     roomHandler.HandleJoinRoom(packet);
                                     break;
+                                case "LIST_ROOM_MEMBERS":
+                                    roomHandler.HandleListRoomMembers();
+                                    break;
                                 case "CREATE_PROJECT":
                                     projectHandler.HandleCreateProject(packet);
                                     break;
@@ -107,6 +111,9 @@ namespace CollaborativeCodingServer.Core
                                 case "UPDATE_FILE_CONTENT":
                                     projectHandler.HandleUpdateFileContent(packet);
                                     break;
+                                case "DELETE_FILE":
+                                    projectHandler.HandleDeleteFile(packet);
+                                    break;
                                 case "UNLOCK_FILE":
                                     projectHandler.HandleUnlockFile(packet);
                                     break;
@@ -124,6 +131,9 @@ namespace CollaborativeCodingServer.Core
                                     break;
                                 case "UPDATE_TASK_STATUS":
                                     taskHandler.HandleUpdateTaskStatus(packet);
+                                    break;
+                                case "DELETE_TASK":
+                                    taskHandler.HandleDeleteTask(packet);
                                     break;
                                 case "COMPILE":
                                     compileHandler.HandleCompile(packet);
@@ -154,6 +164,11 @@ namespace CollaborativeCodingServer.Core
             finally
             {
                 ReleaseFileLocks();
+                CurrentFileId = null;
+                if (CurrentUser != null)
+                {
+                    new AuthService().SetOnlineStatus(CurrentUser.UserID, false);
+                }
                 if (CurrentRoom != null)
                 {
                     CurrentRoom.Clients.Remove(this);

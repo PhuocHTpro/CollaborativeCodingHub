@@ -70,5 +70,17 @@ namespace CollaborativeCodingServer.Repositories
 
             return null;
         }
+
+        public void SetOnlineStatus(int userId, bool isOnline)
+        {
+            using SqlConnection conn = DbConnectionFactory.GetConnection();
+            conn.Open();
+
+            string sql = @"UPDATE Users SET IsOnline = @IsOnline WHERE UserID = @UserID";
+            SqlCommand cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@IsOnline", isOnline);
+            cmd.Parameters.AddWithValue("@UserID", userId);
+            cmd.ExecuteNonQuery();
+        }
     }
 }

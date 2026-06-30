@@ -9,7 +9,7 @@ namespace CollaborativeCodingServer.Database
 {
     public static class DbConnectionFactory
     {
-        private static readonly string connectionString = @"Server=.\SQLEXPRESS; Database=CollaborativeCodingDB; Trusted_Connection=True; TrustServerCertificate=True;";
+        private static readonly string connectionString = @"Server=ADMIN-PC; Database=CollaborativeCodingDB; Trusted_Connection=True; TrustServerCertificate=True;";
 
         public static SqlConnection GetConnection()
         {

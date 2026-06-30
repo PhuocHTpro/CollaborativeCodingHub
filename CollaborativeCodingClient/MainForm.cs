@@ -1,9 +1,9 @@
 using CollaborativeCodingClient.Models.Packets.Auth;
 using CollaborativeCodingClient.Models.Packets.Project;
-using CollaborativeCodingClient.Models.Packets.Room;
-using CollaborativeCodingClient.Network;
 using CollaborativeCodingClient.Models.Packets.Replay;
+using CollaborativeCodingClient.Models.Packets.Room;
 using CollaborativeCodingClient.Models.Packets.Task;
+using CollaborativeCodingClient.Network;
 using System.Text;
 using System.Windows.Forms;
 
@@ -24,7 +24,7 @@ namespace CollaborativeCodingClient
         private void MainForm_Load(object sender, EventArgs e)
         {
             client.Connect("127.0.0.1", 5000);
-            SetStatus("🟡  Connecting to server...", System.Drawing.Color.FromArgb(200, 180, 60));
+            SetStatus("Socket: connecting to 127.0.0.1:5000", System.Drawing.Color.FromArgb(220, 200, 90));
             AppendLog("Connecting to server at 127.0.0.1:5000...");
         }
 
@@ -39,138 +39,224 @@ namespace CollaborativeCodingClient
             switch (packet.Type)
             {
                 case nameof(PacketType.LOGIN_SUCCESS):
-                    currentUsername = txtUsername.Text;
-                    SetStatus($"🟢  Logged in as: {currentUsername}", System.Drawing.Color.FromArgb(60, 180, 80));
-                    AppendLog($"✅ [LOGIN SUCCESS] Welcome, {currentUsername}!");
+                    currentUsername = txtUsername.Text.Trim();
+                    SetStatus($"Socket: connected | User: {currentUsername}", System.Drawing.Color.FromArgb(120, 220, 140));
+                    AppendLog($"LOGIN_SUCCESS {currentUsername}");
                     break;
 
                 case nameof(PacketType.LOGIN_FAILED):
-                    AppendLog("❌ [LOGIN FAILED] Invalid username or password.");
+                    AppendLog("LOGIN_FAILED invalid username or password.");
                     break;
 
                 case nameof(PacketType.REGISTER_SUCCESS):
-                    AppendLog("✅ [REGISTER SUCCESS] Account created. You can now login.");
+                    AppendLog("REGISTER_SUCCESS account created.");
                     break;
 
                 case nameof(PacketType.REGISTER_FAILED):
-                    AppendLog("❌ [REGISTER FAILED] Username already exists.");
+                    AppendLog("REGISTER_FAILED username already exists.");
+                    break;
+
+                case nameof(PacketType.CHAT):
+                    AppendChat(packet.Data);
+                    AppendLog("CHAT received.");
                     break;
 
                 case nameof(PacketType.CREATE_ROOM_SUCCESS):
-                    AppendLog($"🏠 [ROOM CREATED] Room ID: {packet.Data}");
-                    // Auto-fill Room ID vào txtProjectIDRoom để tiện tạo project
+                    txtRoomID.Text = packet.Data;
                     txtProjectIDRoom.Text = packet.Data;
-                    SetStatus($"🟢  {currentUsername}  |  Room: {packet.Data}", System.Drawing.Color.FromArgb(60, 180, 80));
+                    SetStatus($"Socket: connected | User: {currentUsername} | Room: {packet.Data}", System.Drawing.Color.FromArgb(120, 220, 140));
+                    AppendLog($"CREATE_ROOM_SUCCESS RoomID={packet.Data}");
+                    RequestRoomMembers();
                     break;
 
                 case nameof(PacketType.CREATE_ROOM_FAILED):
-                    AppendLog("❌ [CREATE ROOM FAILED] Must be logged in to create a room.");
+                    AppendLog("CREATE_ROOM_FAILED login is required or room is invalid.");
                     break;
 
                 case nameof(PacketType.JOIN_ROOM_SUCCESS):
-                    AppendLog($"🚪 [ROOM JOINED] Room ID: {packet.Data}");
-                    // Auto-fill Room ID vào txtProjectIDRoom
                     txtProjectIDRoom.Text = packet.Data;
-                    SetStatus($"🟢  {currentUsername}  |  Room: {packet.Data}", System.Drawing.Color.FromArgb(60, 180, 80));
+                    SetStatus($"Socket: connected | User: {currentUsername} | Room: {packet.Data}", System.Drawing.Color.FromArgb(120, 220, 140));
+                    AppendLog($"JOIN_ROOM_SUCCESS RoomID={packet.Data}");
+                    RequestRoomMembers();
                     break;
 
                 case nameof(PacketType.JOIN_ROOM_FAILED):
-                    AppendLog("❌ [JOIN ROOM FAILED] Room not found or invalid ID.");
+                case nameof(PacketType.ROOM_NOT_FOUND):
+                    AppendLog("JOIN_ROOM_FAILED room not found or invalid.");
+                    break;
+
+                case nameof(PacketType.LIST_ROOM_MEMBERS_SUCCESS):
+                    RenderRoomMembers(packet.Data);
+                    AppendLog("LIST_ROOM_MEMBERS_SUCCESS members updated.");
+                    break;
+
+                case nameof(PacketType.LIST_ROOM_MEMBERS_FAILED):
+                    AppendLog($"LIST_ROOM_MEMBERS_FAILED {packet.Data}");
                     break;
 
                 case nameof(PacketType.CREATE_PROJECT_SUCCESS):
-                    AppendLog($"📁 [PROJECT CREATED] Project ID: {packet.Data}");
-                    // Auto-fill Project ID vào txtProjectId để tiện tạo file
                     txtProjectId.Text = packet.Data;
+                    txtTaskProjectId.Text = packet.Data;
+                    AppendLog($"CREATE_PROJECT_SUCCESS ProjectID={packet.Data}");
                     break;
 
                 case nameof(PacketType.CREATE_PROJECT_FAILED):
-                    AppendLog("❌ [PROJECT CREATE FAILED] Check room ID and login status.");
+                    AppendLog("CREATE_PROJECT_FAILED check login, room id, and joined room.");
+                    break;
+
+                case nameof(PacketType.LIST_PROJECTS):
+                    txtProjectList.Text = string.IsNullOrWhiteSpace(packet.Data) ? "No projects returned." : packet.Data;
+                    AppendLog("LIST_PROJECTS updated.");
                     break;
 
                 case nameof(PacketType.CREATE_FILE_SUCCESS):
-                    AppendLog($"📄 [FILE CREATED] File ID: {packet.Data}");
-                    // Auto-fill File ID vào txtOpenFileId để tiện mở file
                     txtOpenFileId.Text = packet.Data;
+                    txtHistoryFileId.Text = packet.Data;
+                    AppendLog($"CREATE_FILE_SUCCESS FileID={packet.Data}");
                     break;
 
                 case nameof(PacketType.CREATE_FILE_FAILED):
-                    AppendLog("❌ [FILE CREATE FAILED] Check project ID.");
+                    AppendLog("CREATE_FILE_FAILED check project id.");
                     break;
 
-                case nameof(PacketType.UPDATE_FILE_SUCCESS):
-                    AppendLog("💾 [FILE SAVED] Changes saved successfully.");
+                case nameof(PacketType.LIST_FILES):
+                    txtFileList.Text = string.IsNullOrWhiteSpace(packet.Data) ? "No files returned." : packet.Data;
+                    AppendLog("LIST_FILES updated.");
                     break;
 
-                case nameof(PacketType.UPDATE_FILE_FAILED):
-                    AppendLog("❌ [FILE SAVE FAILED] Could not save the file.");
+                case nameof(PacketType.DELETE_FILE_SUCCESS):
+                    if (int.TryParse(packet.Data, out int deletedFileId) && client.CurrentFileID == deletedFileId)
+                    {
+                        client.CurrentFileID = 0;
+                        client.CurrentFileContent = string.Empty;
+                        lblCurrentFile.Text = "No file opened";
+                    }
+                    AppendLog($"DELETE_FILE_SUCCESS FileID={packet.Data}");
                     break;
 
-                case nameof(PacketType.UNLOCK_FILE_SUCCESS):
-                    AppendLog($"🔓 [FILE UNLOCKED] File ID {packet.Data} is now available for others.");
-                    lblCurrentFile.Text = "No file opened";
-                    client.CurrentFileID = 0;
-                    client.CurrentFileContent = string.Empty;
-                    break;
-
-                case nameof(PacketType.UNLOCK_FILE_FAILED):
-                    AppendLog($"❌ [UNLOCK FAILED] {packet.Data}");
+                case nameof(PacketType.DELETE_FILE_FAILED):
+                    AppendLog($"DELETE_FILE_FAILED {packet.Data}");
                     break;
 
                 case nameof(PacketType.OPEN_FILE):
-                    var openResponse = JsonHelper.Deserialize<SyncFileContentRequest>(packet.Data);
-                    txtEditor.Text = openResponse.Content;
-                    lblCurrentFile.Text = $"📄 File ID: {openResponse.FileID}  [LOCKED by you]";
-                    client.CurrentFileID = openResponse.FileID;
-                    client.CurrentFileContent = openResponse.Content;
-                    // Tự động chuyển sang tab Editor
-                    tabMain.SelectedTab = tabEditor;
-                    AppendLog($"📂 [FILE OPENED] File ID: {openResponse.FileID} — editor tab activated.");
-                    break;
-
-                case nameof(PacketType.SYNC_FILE_CONTENT):
-                    var syncResponse = JsonHelper.Deserialize<SyncFileContentRequest>(packet.Data);
-                    if (syncResponse.FileID == client.CurrentFileID)
-                    {
-                        txtEditor.Text = syncResponse.Content;
-                        client.CurrentFileContent = syncResponse.Content;
-                        AppendLog($"🔄 [SYNCED] File {syncResponse.FileID} updated by {syncResponse.Username}.");
-                    }
-                    break;
-
-                case nameof(PacketType.COMPILE_SUCCESS):
-                    txtCompileResult.ForeColor = System.Drawing.Color.FromArgb(144, 238, 144);
-                    txtCompileResult.Text = packet.Data;
-                    AppendLog("⚙️ [COMPILE SUCCESS] See output below in Editor tab.");
-                    tabMain.SelectedTab = tabEditor;
-                    break;
-
-                case nameof(PacketType.COMPILE_FAILED):
-                    txtCompileResult.ForeColor = System.Drawing.Color.FromArgb(255, 120, 120);
-                    txtCompileResult.Text = packet.Data;
-                    AppendLog("⚙️ [COMPILE FAILED] See error output below.");
-                    tabMain.SelectedTab = tabEditor;
+                    HandleOpenFile(packet);
                     break;
 
                 case nameof(PacketType.FILE_NOT_FOUND):
-                    AppendLog("❌ [FILE NOT FOUND] The requested file does not exist.");
+                    AppendLog("FILE_NOT_FOUND requested file does not exist or is outside current room.");
                     break;
 
                 case nameof(PacketType.FILE_LOCKED):
-                    AppendLog($"🔒 [FILE LOCKED] This file is currently locked by: {packet.Data}");
+                    lblCurrentFile.Text = $"File locked by {packet.Data}";
+                    AppendLog($"FILE_LOCKED owner={packet.Data}");
                     break;
 
-                case nameof(PacketType.ROOM_NOT_FOUND):
-                    AppendLog("❌ [ROOM NOT FOUND] Check the room ID and try again.");
+                case nameof(PacketType.UPDATE_FILE_SUCCESS):
+                    AppendLog("UPDATE_FILE_SUCCESS content saved.");
+                    break;
+
+                case nameof(PacketType.UPDATE_FILE_FAILED):
+                    AppendLog($"UPDATE_FILE_FAILED {packet.Data}");
+                    break;
+
+                case nameof(PacketType.UNLOCK_FILE_SUCCESS):
+                    lblCurrentFile.Text = "No file opened";
+                    client.CurrentFileID = 0;
+                    client.CurrentFileContent = string.Empty;
+                    AppendLog($"UNLOCK_FILE_SUCCESS FileID={packet.Data}");
+                    break;
+
+                case nameof(PacketType.UNLOCK_FILE_FAILED):
+                    AppendLog($"UNLOCK_FILE_FAILED {packet.Data}");
+                    break;
+
+                case nameof(PacketType.SYNC_FILE_CONTENT):
+                    HandleSyncFile(packet);
+                    break;
+
+                case nameof(PacketType.COMPILE_SUCCESS):
+                    txtCompileResult.ForeColor = System.Drawing.Color.FromArgb(190, 245, 190);
+                    txtCompileResult.Text = packet.Data;
+                    tabMain.SelectedTab = tabEditor;
+                    AppendLog("COMPILE_SUCCESS output updated.");
+                    break;
+
+                case nameof(PacketType.COMPILE_FAILED):
+                    txtCompileResult.ForeColor = System.Drawing.Color.FromArgb(255, 140, 140);
+                    txtCompileResult.Text = packet.Data;
+                    tabMain.SelectedTab = tabEditor;
+                    AppendLog("COMPILE_FAILED output updated.");
+                    break;
+
+                case nameof(PacketType.LIST_HISTORY_SUCCESS):
+                    RenderHistoryList(packet.Data);
+                    tabMain.SelectedTab = tabReplay;
+                    AppendLog("LIST_HISTORY_SUCCESS history updated.");
+                    break;
+
+                case nameof(PacketType.LIST_HISTORY_FAILED):
+                    txtHistoryList.Text = packet.Data;
+                    AppendLog($"LIST_HISTORY_FAILED {packet.Data}");
+                    break;
+
+                case nameof(PacketType.OPEN_HISTORY_SUCCESS):
+                    txtHistoryPreview.Text = packet.Data;
+                    tabMain.SelectedTab = tabReplay;
+                    AppendLog("OPEN_HISTORY_SUCCESS preview updated.");
+                    break;
+
+                case nameof(PacketType.OPEN_HISTORY_FAILED):
+                    txtHistoryPreview.Text = packet.Data;
+                    AppendLog($"OPEN_HISTORY_FAILED {packet.Data}");
+                    break;
+
+                case nameof(PacketType.CREATE_TASK_SUCCESS):
+                    AppendLog("CREATE_TASK_SUCCESS task created.");
+                    RequestTaskList();
+                    break;
+
+                case nameof(PacketType.CREATE_TASK_FAILED):
+                    AppendLog("CREATE_TASK_FAILED check project id, task name, and assigned user id.");
+                    break;
+
+                case nameof(PacketType.LIST_TASKS_SUCCESS):
+                    txtTaskList.Text = packet.Data;
+                    tabMain.SelectedTab = tabTasks;
+                    AppendLog("LIST_TASKS_SUCCESS task list updated.");
+                    break;
+
+                case nameof(PacketType.LIST_TASKS_FAILED):
+                    txtTaskList.Text = packet.Data;
+                    AppendLog($"LIST_TASKS_FAILED {packet.Data}");
+                    break;
+
+                case nameof(PacketType.UPDATE_TASK_STATUS_SUCCESS):
+                    AppendLog("UPDATE_TASK_STATUS_SUCCESS task updated.");
+                    RequestTaskList();
+                    break;
+
+                case nameof(PacketType.UPDATE_TASK_STATUS_FAILED):
+                    AppendLog("UPDATE_TASK_STATUS_FAILED.");
+                    break;
+
+                case nameof(PacketType.DELETE_TASK_SUCCESS):
+                    AppendLog("DELETE_TASK_SUCCESS task deleted.");
+                    RequestTaskList();
+                    break;
+
+                case nameof(PacketType.DELETE_TASK_FAILED):
+                    AppendLog($"DELETE_TASK_FAILED {packet.Data}");
                     break;
 
                 case nameof(PacketType.ACCESS_DENIED):
-                    AppendLog($"⛔ [ACCESS DENIED] {packet.Data}");
+                    AppendLog($"ACCESS_DENIED {packet.Data}");
                     break;
 
                 default:
                     if (!string.IsNullOrWhiteSpace(packet.Data))
-                        AppendLog(packet.Data);
+                        AppendLog($"{packet.Type}: {packet.Data}");
+                    else
+                        AppendLog(packet.Type);
                     break;
             }
         }
@@ -179,159 +265,393 @@ namespace CollaborativeCodingClient
         {
             if (string.IsNullOrWhiteSpace(txtUsername.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
             {
-                AppendLog("⚠️ Username and password are required.");
+                AppendLog("Username and password are required.");
                 return;
             }
-            var request = new RegisterRequest
+
+            SendPacket(PacketType.REGISTER, new RegisterRequest
             {
                 Username = txtUsername.Text.Trim(),
                 Password = txtPassword.Text
-            };
-            SendPacket(PacketType.REGISTER, request);
+            });
         }
 
         private void btnLogin_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtUsername.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
             {
-                AppendLog("⚠️ Username and password are required.");
+                AppendLog("Username and password are required.");
                 return;
             }
-            var request = new LoginRequest
+
+            SendPacket(PacketType.LOGIN, new LoginRequest
             {
                 Username = txtUsername.Text.Trim(),
                 Password = txtPassword.Text
-            };
-            SendPacket(PacketType.LOGIN, request);
+            });
         }
 
         private void btnCreateRoom_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtRoomName.Text))
             {
-                AppendLog("⚠️ Room name is required.");
+                AppendLog("Room name is required.");
                 return;
             }
-            var request = new CreateRoomRequest
+
+            SendPacket(PacketType.CREATE_ROOM, new CreateRoomRequest
             {
                 RoomName = txtRoomName.Text.Trim()
-            };
-            SendPacket(PacketType.CREATE_ROOM, request);
+            });
         }
 
         private void btnJoinRoom_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtRoomID.Text))
             {
-                AppendLog("⚠️ Room ID is required.");
+                AppendLog("Room ID is required.");
                 return;
             }
-            var request = new JoinRoomRequest
+
+            SendPacket(PacketType.JOIN_ROOM, new JoinRoomRequest
             {
                 RoomId = txtRoomID.Text.Trim().ToUpper()
-            };
-            SendPacket(PacketType.JOIN_ROOM, request);
+            });
+        }
+
+        private void btnRefreshMembers_Click(object sender, EventArgs e)
+        {
+            RequestRoomMembers();
         }
 
         private void btnCreateProject_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtProjectName.Text) || string.IsNullOrWhiteSpace(txtProjectIDRoom.Text))
             {
-                AppendLog("⚠️ Project name and Room ID are required.");
+                AppendLog("Project name and Room ID are required.");
                 return;
             }
-            var request = new CreateProjectRequest
+
+            SendPacket(PacketType.CREATE_PROJECT, new CreateProjectRequest
             {
                 ProjectName = txtProjectName.Text.Trim(),
                 RoomID = txtProjectIDRoom.Text.Trim().ToUpper()
-            };
-            SendPacket(PacketType.CREATE_PROJECT, request);
+            });
+        }
+
+        private void btnListProjects_Click(object sender, EventArgs e)
+        {
+            SendRawPacket(PacketType.LIST_PROJECTS, "");
+            AppendLog("Requesting project list...");
         }
 
         private void btnCreateFile_Click(object sender, EventArgs e)
         {
             if (!int.TryParse(txtProjectId.Text, out int projectId) || projectId <= 0)
             {
-                AppendLog("⚠️ Project ID must be a valid number.");
+                AppendLog("Project ID must be a valid number.");
                 return;
             }
+
             if (string.IsNullOrWhiteSpace(txtFileName.Text))
             {
-                AppendLog("⚠️ File name is required.");
+                AppendLog("File name is required.");
                 return;
             }
-            var request = new CreateFileRequest
+
+            SendPacket(PacketType.CREATE_FILE, new CreateFileRequest
             {
                 ProjectID = projectId,
                 FileName = txtFileName.Text.Trim()
-            };
-            SendPacket(PacketType.CREATE_FILE, request);
+            });
+        }
+
+        private void btnListFiles_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtProjectId.Text, out int projectId) || projectId <= 0)
+            {
+                AppendLog("Project ID must be a valid number.");
+                return;
+            }
+
+            SendPacket(PacketType.LIST_FILES, new ListFilesRequest
+            {
+                ProjectID = projectId
+            });
+            AppendLog("Requesting file list...");
         }
 
         private void btnOpenFile_Click(object sender, EventArgs e)
         {
             if (!int.TryParse(txtOpenFileId.Text, out int fileId) || fileId <= 0)
             {
-                AppendLog("⚠️ File ID must be a valid number.");
+                AppendLog("File ID must be a valid number.");
                 return;
             }
-            var request = new OpenFileRequest
+
+            SendPacket(PacketType.OPEN_FILE, new OpenFileRequest
             {
                 FileID = fileId
-            };
-            SendPacket(PacketType.OPEN_FILE, request);
+            });
         }
 
         private void btnUnlockFile_Click(object sender, EventArgs e)
         {
             if (client.CurrentFileID == 0)
             {
-                AppendLog("⚠️ No file is currently opened/locked.");
+                AppendLog("No file is currently opened/locked.");
                 return;
             }
 
-            // Gửi File ID hiện tại để unlock
-            var packet = new Packet
+            SendRawPacket(PacketType.UNLOCK_FILE, client.CurrentFileID.ToString());
+            AppendLog($"Requesting unlock for FileID={client.CurrentFileID}...");
+        }
+
+        private void btnDeleteFile_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtOpenFileId.Text, out int fileId) || fileId <= 0)
             {
-                Type = PacketType.UNLOCK_FILE.ToString(),
-                Data = client.CurrentFileID.ToString()
-            };
-            client.Send(JsonHelper.Serialize(packet));
-            AppendLog($"🔓 Requesting unlock for File ID: {client.CurrentFileID}...");
+                AppendLog("File ID must be a valid number.");
+                return;
+            }
+
+            SendPacket(PacketType.DELETE_FILE, new DeleteFileRequest
+            {
+                FileID = fileId
+            });
+            AppendLog($"Deleting FileID={fileId}...");
         }
 
         private void btnSaveFile_Click(object sender, EventArgs e)
         {
             if (client.CurrentFileID == 0)
             {
-                AppendLog("⚠️ No file opened. Open a file first.");
+                AppendLog("No file opened. Open a file first.");
                 return;
             }
 
-            var request = new UpdateFileContentRequest
+            client.CurrentFileContent = txtEditor.Text;
+            SendPacket(PacketType.UPDATE_FILE_CONTENT, new UpdateFileContentRequest
             {
                 FileID = client.CurrentFileID,
                 Content = txtEditor.Text
-            };
-            client.CurrentFileContent = txtEditor.Text;
-            SendPacket(PacketType.UPDATE_FILE_CONTENT, request);
+            });
         }
 
         private void btnCompile_Click(object sender, EventArgs e)
         {
             if (client.CurrentFileID == 0)
             {
-                AppendLog("⚠️ No file opened. Open a file first.");
+                AppendLog("No file opened. Open a file first.");
                 return;
             }
 
-            var request = new CompileRequest
+            SendPacket(PacketType.COMPILE, new CompileRequest
             {
                 FileID = client.CurrentFileID,
                 Content = txtEditor.Text
-            };
-            SendPacket(PacketType.COMPILE, request);
-            AppendLog("⚙️ Compiling...");
+            });
+            AppendLog("Compiling current editor content...");
+        }
+
+        private void btnSendChat_Click(object sender, EventArgs e)
+        {
+            string message = txtChatInput.Text.Trim();
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                AppendLog("Chat message is empty.");
+                return;
+            }
+
+            SendRawPacket(PacketType.CHAT, message);
+            AppendChat($"[me] {currentUsername}: {message}");
+            txtChatInput.Clear();
+        }
+
+        private void btnCreateTask_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtTaskProjectId.Text, out int projectId) || projectId <= 0)
+            {
+                AppendLog("Task Project ID must be a valid number.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtTaskName.Text))
+            {
+                AppendLog("Task name is required.");
+                return;
+            }
+
+            int? assignedTo = null;
+            if (!string.IsNullOrWhiteSpace(txtAssignedTo.Text))
+            {
+                if (!int.TryParse(txtAssignedTo.Text, out int assignedUserId))
+                {
+                    AppendLog("Assigned To must be empty or a valid user id.");
+                    return;
+                }
+                assignedTo = assignedUserId;
+            }
+
+            SendPacket(PacketType.CREATE_TASK, new CreateTaskRequest
+            {
+                ProjectID = projectId,
+                TaskName = txtTaskName.Text.Trim(),
+                AssignedTo = assignedTo
+            });
+            AppendLog("Creating task...");
+        }
+
+        private void btnListTasks_Click(object sender, EventArgs e)
+        {
+            RequestTaskList();
+        }
+
+        private void btnUpdateTaskStatus_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtTaskId.Text, out int taskId) || taskId <= 0)
+            {
+                AppendLog("Task ID must be a valid number.");
+                return;
+            }
+
+            SendPacket(PacketType.UPDATE_TASK_STATUS, new UpdateTaskStatusRequest
+            {
+                TaskID = taskId,
+                Status = cmbTaskStatus.SelectedItem?.ToString() ?? "TODO"
+            });
+            AppendLog("Updating task status...");
+        }
+
+        private void btnDeleteTask_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtTaskId.Text, out int taskId) || taskId <= 0)
+            {
+                AppendLog("Task ID must be a valid number.");
+                return;
+            }
+
+            SendPacket(PacketType.DELETE_TASK, new DeleteTaskRequest
+            {
+                TaskID = taskId
+            });
+            AppendLog($"Deleting TaskID={taskId}...");
+        }
+
+        private void btnListHistory_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtHistoryFileId.Text, out int fileId) || fileId <= 0)
+            {
+                AppendLog("History File ID must be a valid number.");
+                return;
+            }
+
+            SendPacket(PacketType.LIST_HISTORY, new ListHistoryRequest
+            {
+                FileID = fileId
+            });
+            AppendLog("Requesting file history...");
+        }
+
+        private void btnOpenHistory_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtHistoryId.Text, out int historyId) || historyId <= 0)
+            {
+                AppendLog("History ID must be a valid number.");
+                return;
+            }
+
+            SendPacket(PacketType.OPEN_HISTORY, new OpenHistoryRequest
+            {
+                HistoryID = historyId
+            });
+            AppendLog("Opening history version...");
+        }
+
+        private void HandleOpenFile(Packet packet)
+        {
+            SyncFileContentRequest openResponse = JsonHelper.Deserialize<SyncFileContentRequest>(packet.Data);
+            txtEditor.Text = openResponse.Content;
+            lblCurrentFile.Text = $"FileID: {openResponse.FileID} | Locked by you";
+            client.CurrentFileID = openResponse.FileID;
+            client.CurrentFileContent = openResponse.Content;
+            txtOpenFileId.Text = openResponse.FileID.ToString();
+            txtHistoryFileId.Text = openResponse.FileID.ToString();
+            tabMain.SelectedTab = tabEditor;
+            AppendLog($"OPEN_FILE FileID={openResponse.FileID}");
+        }
+
+        private void HandleSyncFile(Packet packet)
+        {
+            SyncFileContentRequest syncResponse = JsonHelper.Deserialize<SyncFileContentRequest>(packet.Data);
+            if (syncResponse.FileID != client.CurrentFileID)
+            {
+                return;
+            }
+
+            txtEditor.Text = syncResponse.Content;
+            client.CurrentFileContent = syncResponse.Content;
+            AppendLog($"SYNC_FILE_CONTENT FileID={syncResponse.FileID} by {syncResponse.Username}");
+        }
+
+        private void RenderHistoryList(string json)
+        {
+            try
+            {
+                List<HistoryInfoResponse> histories = JsonHelper.Deserialize<List<HistoryInfoResponse>>(json);
+                StringBuilder builder = new StringBuilder();
+                foreach (HistoryInfoResponse history in histories)
+                {
+                    builder.AppendLine($"{history.HistoryID} | v{history.VersionNo} | editor {history.EditedBy} | {history.EditedTime:yyyy-MM-dd HH:mm:ss}");
+                    builder.AppendLine($"    {history.ChangeSummary}");
+                }
+
+                txtHistoryList.Text = builder.Length == 0 ? "No history found." : builder.ToString();
+            }
+            catch
+            {
+                txtHistoryList.Text = json;
+            }
+        }
+
+        private void RenderRoomMembers(string json)
+        {
+            lstMembers.Items.Clear();
+
+            try
+            {
+                List<RoomMemberResponse> members = JsonHelper.Deserialize<List<RoomMemberResponse>>(json);
+                foreach (RoomMemberResponse member in members)
+                {
+                    string status = member.IsOnline ? "Online" : "Offline";
+                    lstMembers.Items.Add(new ListViewItem(new[] { member.Username, member.Role, status }));
+                }
+            }
+            catch
+            {
+                AppendLog("Could not parse room members response.");
+            }
+        }
+
+        private void RequestRoomMembers()
+        {
+            SendRawPacket(PacketType.LIST_ROOM_MEMBERS, "");
+            AppendLog("Requesting room members...");
+        }
+
+        private void RequestTaskList()
+        {
+            if (!int.TryParse(txtTaskProjectId.Text, out int projectId) || projectId <= 0)
+            {
+                AppendLog("Task Project ID must be a valid number.");
+                return;
+            }
+
+            SendPacket(PacketType.LIST_TASKS, new ListTaskRequest
+            {
+                ProjectID = projectId
+            });
+            AppendLog("Requesting task list...");
         }
 
         private void SetStatus(string message, System.Drawing.Color color)
@@ -343,6 +663,26 @@ namespace CollaborativeCodingClient
         private void AppendLog(string message)
         {
             txtLog.AppendText($"{DateTime.Now:HH:mm:ss}  {message}{Environment.NewLine}");
+        }
+
+        private void AppendChat(string message)
+        {
+            if (txtChatMessages.Text == "Team chat messages will appear here.")
+            {
+                txtChatMessages.Clear();
+            }
+
+            txtChatMessages.AppendText($"{DateTime.Now:HH:mm:ss}  {message}{Environment.NewLine}");
+        }
+
+        private void SendRawPacket(PacketType type, string data)
+        {
+            var packet = new Packet
+            {
+                Type = type.ToString(),
+                Data = data
+            };
+            client.Send(JsonHelper.Serialize(packet));
         }
 
         private void SendPacket(PacketType type, object request)

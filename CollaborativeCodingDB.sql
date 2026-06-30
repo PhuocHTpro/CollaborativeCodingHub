@@ -194,8 +194,6 @@ CREATE TABLE Projects
 
     ProjectName NVARCHAR(100) NOT NULL,
 
-    Description NVARCHAR(500),
-
     CreatedBy INT NOT NULL,
 
     CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
@@ -212,33 +210,6 @@ CREATE TABLE Projects
 GO
 
 /*==========================================================
-    PROJECT FOLDERS
-==========================================================*/
-
-CREATE TABLE ProjectFolders
-(
-    FolderID INT IDENTITY(1,1) PRIMARY KEY,
-
-    ProjectID INT NOT NULL,
-
-    ParentFolderID INT NULL,
-
-    FolderName NVARCHAR(100) NOT NULL,
-
-    CreatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_Folder_Project
-        FOREIGN KEY(ProjectID)
-        REFERENCES Projects(ProjectID),
-
-    CONSTRAINT FK_Folder_Parent
-        FOREIGN KEY(ParentFolderID)
-        REFERENCES ProjectFolders(FolderID)
-);
-
-GO
-
-/*==========================================================
     PROJECT FILES
 ==========================================================*/
 
@@ -247,13 +218,7 @@ CREATE TABLE ProjectFiles
     FileID INT IDENTITY(1,1) PRIMARY KEY,
 
     ProjectID INT NOT NULL,
-
-    FolderID INT NULL,
-
     FileName NVARCHAR(255) NOT NULL,
-
-    Extension NVARCHAR(20),
-
     Content NVARCHAR(MAX),
 
     CreatedBy INT NOT NULL,
@@ -263,18 +228,9 @@ CREATE TABLE ProjectFiles
     CreatedDate DATETIME DEFAULT GETDATE(),
 
     LastModified DATETIME DEFAULT GETDATE(),
-
-    IsLocked BIT DEFAULT 0,
-
-    LockedBy INT NULL,
-
     CONSTRAINT FK_File_Project
         FOREIGN KEY(ProjectID)
         REFERENCES Projects(ProjectID),
-
-    CONSTRAINT FK_File_Folder
-        FOREIGN KEY(FolderID)
-        REFERENCES ProjectFolders(FolderID),
 
     CONSTRAINT FK_File_CreateUser
         FOREIGN KEY(CreatedBy)
@@ -282,10 +238,6 @@ CREATE TABLE ProjectFiles
 
     CONSTRAINT FK_File_ModifiedUser
         FOREIGN KEY(LastModifiedBy)
-        REFERENCES Users(UserID),
-
-    CONSTRAINT FK_File_LockedUser
-        FOREIGN KEY(LockedBy)
         REFERENCES Users(UserID)
 );
 
@@ -301,9 +253,6 @@ ON Projects(RoomID);
 CREATE INDEX IDX_FILE_PROJECT
 ON ProjectFiles(ProjectID);
 
-CREATE INDEX IDX_FOLDER_PROJECT
-ON ProjectFolders(ProjectID);
-
 GO
 
 /*==========================================================
@@ -314,7 +263,6 @@ INSERT INTO Projects
 (
 RoomID,
 ProjectName,
-Description,
 CreatedBy
 )
 
@@ -322,31 +270,8 @@ VALUES
 (
 'ROOM001',
 'Collaborative Coding',
-'Final Project',
 1
 );
-
-GO
-
-/*==========================================================
-    SAMPLE FOLDERS
-==========================================================*/
-
-INSERT INTO ProjectFolders
-(
-ProjectID,
-ParentFolderID,
-FolderName
-)
-
-VALUES
-(1,NULL,'src'),
-
-(1,NULL,'Models'),
-
-(1,NULL,'Services'),
-
-(1,NULL,'Database');
 
 GO
 
@@ -357,9 +282,7 @@ GO
 INSERT INTO ProjectFiles
 (
 ProjectID,
-FolderID,
 FileName,
-Extension,
 Content,
 CreatedBy,
 LastModifiedBy
@@ -368,9 +291,7 @@ LastModifiedBy
 VALUES
 (
 1,
-1,
 'Program.cs',
-'.cs',
 'Console.WriteLine("Hello World");',
 1,
 1
@@ -378,9 +299,7 @@ VALUES
 
 (
 1,
-2,
 'User.cs',
-'.cs',
 'public class User{}',
 1,
 1
@@ -388,9 +307,7 @@ VALUES
 
 (
 1,
-3,
 'UserService.cs',
-'.cs',
 'public class UserService{}',
 1,
 1
@@ -403,8 +320,6 @@ GO
 ==========================================================*/
 
 SELECT * FROM Projects;
-
-SELECT * FROM ProjectFolders;
 
 SELECT * FROM ProjectFiles;
 
@@ -421,21 +336,11 @@ CREATE TABLE Tasks
     ProjectID INT NOT NULL,
 
     TaskName NVARCHAR(200) NOT NULL,
-
-    Description NVARCHAR(MAX),
-
     AssignedTo INT NULL,
 
     CreatedBy INT NOT NULL,
 
     Status NVARCHAR(20) NOT NULL DEFAULT 'TODO',
-
-    Priority NVARCHAR(20) NOT NULL DEFAULT 'MEDIUM',
-
-    Progress INT NOT NULL DEFAULT 0,
-
-    Deadline DATETIME NULL,
-
     CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
 
     LastUpdated DATETIME NOT NULL DEFAULT GETDATE(),
@@ -459,46 +364,7 @@ CREATE TABLE Tasks
             'TODO',
             'IN_PROGRESS',
             'DONE'
-        )),
-
-    CONSTRAINT CK_Task_Priority
-        CHECK(Priority IN
-        (
-            'LOW',
-            'MEDIUM',
-            'HIGH'
-        )),
-
-    CONSTRAINT CK_Task_Progress
-        CHECK(Progress BETWEEN 0 AND 100)
-);
-
-GO
-
-/*==========================================================
-    TASK COMMENTS
-==========================================================*/
-
-CREATE TABLE TaskComments
-(
-    CommentID INT IDENTITY(1,1) PRIMARY KEY,
-
-    TaskID INT NOT NULL,
-
-    UserID INT NOT NULL,
-
-    Comment NVARCHAR(MAX),
-
-    CommentTime DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_TaskComment_Task
-        FOREIGN KEY(TaskID)
-        REFERENCES Tasks(TaskID)
-        ON DELETE CASCADE,
-
-    CONSTRAINT FK_TaskComment_User
-        FOREIGN KEY(UserID)
-        REFERENCES Users(UserID)
+        ))
 );
 
 GO
@@ -526,78 +392,34 @@ INSERT INTO Tasks
 (
 ProjectID,
 TaskName,
-Description,
 AssignedTo,
 CreatedBy,
-Status,
-Priority,
-Progress
+Status
 )
 
 VALUES
 (
 1,
 'Build Login',
-'Implement Login Module',
 2,
 1,
-'IN_PROGRESS',
-'HIGH',
-35
+'IN_PROGRESS'
 ),
 
 (
 1,
 'Realtime Sync',
-'Socket Synchronization',
 3,
 1,
-'TODO',
-'HIGH',
-0
+'TODO'
 ),
 
 (
 1,
 'Task Manager',
-'Create CRUD Task',
 2,
 1,
-'DONE',
-'MEDIUM',
-100
-);
-
-GO
-
-/*==========================================================
-    SAMPLE COMMENTS
-==========================================================*/
-
-INSERT INTO TaskComments
-(
-TaskID,
-UserID,
-Comment
-)
-
-VALUES
-(
-1,
-2,
-'Login dang du?c phát tri?n.'
-),
-
-(
-1,
-1,
-'Hoàn thành tru?c th? 6.'
-),
-
-(
-3,
-2,
-'Ðã hoàn thành và test.'
+'DONE'
 );
 
 GO
@@ -617,9 +439,7 @@ T.TaskName,
 
 T.Status,
 
-T.Priority,
-
-T.Progress,
+T.AssignedTo AS AssignedUserID,
 
 U.Username
 
@@ -640,8 +460,6 @@ GO
 ==========================================================*/
 
 SELECT * FROM Tasks;
-
-SELECT * FROM TaskComments;
 
 SELECT * FROM vw_TaskSummary;
 
@@ -680,42 +498,6 @@ CREATE TABLE FileHistory
 GO
 
 /*==========================================================
-    COMPILE HISTORY (Live Compile)
-==========================================================*/
-
-CREATE TABLE CompileHistory
-(
-    CompileID INT IDENTITY(1,1) PRIMARY KEY,
-
-    FileID INT NOT NULL,
-
-    UserID INT NOT NULL,
-
-    CompileTime DATETIME NOT NULL DEFAULT GETDATE(),
-
-    IsSuccess BIT NOT NULL,
-
-    CompileOutput NVARCHAR(MAX),
-
-    ErrorCount INT DEFAULT 0,
-
-    WarningCount INT DEFAULT 0,
-
-    ExecutionTime INT DEFAULT 0,
-
-    CONSTRAINT FK_Compile_File
-        FOREIGN KEY(FileID)
-        REFERENCES ProjectFiles(FileID)
-        ON DELETE CASCADE,
-
-    CONSTRAINT FK_Compile_User
-        FOREIGN KEY(UserID)
-        REFERENCES Users(UserID)
-);
-
-GO
-
-/*==========================================================
     INDEX
 ==========================================================*/
 
@@ -724,9 +506,6 @@ ON FileHistory(FileID);
 
 CREATE INDEX IDX_HISTORY_VERSION
 ON FileHistory(FileID,VersionNo);
-
-CREATE INDEX IDX_COMPILE_FILE
-ON CompileHistory(FileID);
 
 GO
 
@@ -771,44 +550,6 @@ VALUES
 GO
 
 /*==========================================================
-    SAMPLE COMPILE HISTORY
-==========================================================*/
-
-INSERT INTO CompileHistory
-(
-FileID,
-UserID,
-IsSuccess,
-CompileOutput,
-ErrorCount,
-WarningCount,
-ExecutionTime
-)
-
-VALUES
-(
-1,
-2,
-1,
-'Build succeeded.',
-0,
-0,
-215
-),
-
-(
-1,
-2,
-0,
-'CS1002 ; expected',
-1,
-0,
-190
-);
-
-GO
-
-/*==========================================================
     VIEW : FILE VERSION
 ==========================================================*/
 
@@ -839,39 +580,6 @@ ON H.EditedBy=U.UserID;
 
 GO
 
-/*==========================================================
-    VIEW : COMPILE RESULT
-==========================================================*/
-
-CREATE VIEW vw_CompileHistory
-AS
-
-SELECT
-
-P.FileName,
-
-U.Username,
-
-C.IsSuccess,
-
-C.ErrorCount,
-
-C.WarningCount,
-
-C.ExecutionTime,
-
-C.CompileTime
-
-FROM CompileHistory C
-
-INNER JOIN ProjectFiles P
-
-ON C.FileID=P.FileID
-
-INNER JOIN Users U
-
-ON C.UserID=U.UserID;
-
 GO
 
 /*==========================================================
@@ -880,11 +588,7 @@ GO
 
 SELECT * FROM FileHistory;
 
-SELECT * FROM CompileHistory;
-
 SELECT * FROM vw_FileVersions;
-
-SELECT * FROM vw_CompileHistory;
 
 GO
 
@@ -959,7 +663,6 @@ CREATE PROCEDURE sp_CreateTask
 (
     @ProjectID INT,
     @TaskName NVARCHAR(200),
-    @Description NVARCHAR(MAX),
     @AssignedTo INT,
     @CreatedBy INT
 )
@@ -970,7 +673,6 @@ BEGIN
     (
         ProjectID,
         TaskName,
-        Description,
         AssignedTo,
         CreatedBy
     )
@@ -978,7 +680,6 @@ BEGIN
     (
         @ProjectID,
         @TaskName,
-        @Description,
         @AssignedTo,
         @CreatedBy
     );

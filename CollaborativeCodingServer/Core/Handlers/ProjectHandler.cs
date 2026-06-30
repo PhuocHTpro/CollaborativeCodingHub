@@ -77,6 +77,10 @@ namespace CollaborativeCodingServer.Core.Handlers
                 FileLockManager.LockedFiles[fileId] == clientHandler.Username)
             {
                 FileLockManager.LockedFiles.TryRemove(fileId, out _);
+                if (clientHandler.CurrentFileId == fileId)
+                {
+                    clientHandler.CurrentFileId = null;
+                }
                 Console.WriteLine($"[UNLOCK] File {fileId} unlocked by {clientHandler.Username}");
                 clientHandler.SendPacket(PacketType.UNLOCK_FILE_SUCCESS, fileId.ToString());
             }
@@ -180,7 +184,52 @@ namespace CollaborativeCodingServer.Core.Handlers
                 Username = clientHandler.Username
             };
 
+            clientHandler.CurrentFileId = request.FileID;
             clientHandler.SendPacket(PacketType.OPEN_FILE, JsonHelper.Serialize(openResponse));
+        }
+
+        public void HandleDeleteFile(Packet packet)
+        {
+            DeleteFileRequest request = JsonHelper.Deserialize<DeleteFileRequest>(packet.Data);
+            if (clientHandler.CurrentUser == null || clientHandler.CurrentRoom == null)
+            {
+                clientHandler.SendPacket(PacketType.DELETE_FILE_FAILED, "Login and room are required.");
+                return;
+            }
+
+            if (request.FileID <= 0)
+            {
+                clientHandler.SendPacket(PacketType.DELETE_FILE_FAILED, "Invalid file ID.");
+                return;
+            }
+
+            if (!projectService.CanAccessFile(request.FileID, clientHandler.CurrentRoom.RoomId))
+            {
+                clientHandler.SendPacket(PacketType.DELETE_FILE_FAILED, "File not found in current room.");
+                return;
+            }
+
+            if (FileLockManager.LockedFiles.TryGetValue(request.FileID, out string? owner) &&
+                owner != clientHandler.Username)
+            {
+                clientHandler.SendPacket(PacketType.DELETE_FILE_FAILED, $"File is locked by {owner}.");
+                return;
+            }
+
+            bool success = fileService.DeleteFile(request.FileID);
+            if (success)
+            {
+                FileLockManager.LockedFiles.TryRemove(request.FileID, out _);
+                if (clientHandler.CurrentFileId == request.FileID)
+                {
+                    clientHandler.CurrentFileId = null;
+                }
+                clientHandler.SendPacket(PacketType.DELETE_FILE_SUCCESS, request.FileID.ToString());
+            }
+            else
+            {
+                clientHandler.SendPacket(PacketType.DELETE_FILE_FAILED, "Delete failed.");
+            }
         }
 
         public void HandleUpdateFileContent(Packet packet)

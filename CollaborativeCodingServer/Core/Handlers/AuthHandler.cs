@@ -24,6 +24,7 @@ namespace CollaborativeCodingServer.Core.Handlers
             {
                 clientHandler.CurrentUser = user;
                 clientHandler.Username = request.Username;
+                authService.SetOnlineStatus(user.UserID, true);
                 clientHandler.SendPacket(PacketType.LOGIN_SUCCESS);
             }
             else
