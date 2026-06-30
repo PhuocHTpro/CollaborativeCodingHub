@@ -111,22 +111,6 @@ GO
     SAMPLE USERS
 ==========================================================*/
 
-INSERT INTO Users
-(
-Username,
-Password,
-FullName,
-Email
-)
-
-VALUES
-('admin','123','Administrator','admin@gmail.com'),
-
-('Phuong','123','Minh Phuong','phuong@gmail.com'),
-
-('UserA','123','User A','a@gmail.com'),
-
-('UserB','123','User B','b@gmail.com');
 
 GO
 
@@ -134,19 +118,7 @@ GO
     SAMPLE ROOM
 ==========================================================*/
 
-INSERT INTO Rooms
-(
-RoomID,
-RoomName,
-OwnerID
-)
 
-VALUES
-(
-'ROOM001',
-'Demo Room',
-1
-);
 
 GO
 
@@ -154,19 +126,6 @@ GO
     ROOM MEMBERS
 ==========================================================*/
 
-INSERT INTO RoomMembers
-(
-RoomID,
-UserID,
-Role
-)
-
-VALUES
-('ROOM001',1,'Owner'),
-
-('ROOM001',2,'Member'),
-
-('ROOM001',3,'Member');
 
 GO
 
@@ -259,59 +218,12 @@ GO
     SAMPLE PROJECT
 ==========================================================*/
 
-INSERT INTO Projects
-(
-RoomID,
-ProjectName,
-CreatedBy
-)
-
-VALUES
-(
-'ROOM001',
-'Collaborative Coding',
-1
-);
-
 GO
 
 /*==========================================================
     SAMPLE FILES
 ==========================================================*/
 
-INSERT INTO ProjectFiles
-(
-ProjectID,
-FileName,
-Content,
-CreatedBy,
-LastModifiedBy
-)
-
-VALUES
-(
-1,
-'Program.cs',
-'Console.WriteLine("Hello World");',
-1,
-1
-),
-
-(
-1,
-'User.cs',
-'public class User{}',
-1,
-1
-),
-
-(
-1,
-'UserService.cs',
-'public class UserService{}',
-1,
-1
-);
 
 GO
 
@@ -387,40 +299,6 @@ GO
 /*==========================================================
     SAMPLE TASK
 ==========================================================*/
-
-INSERT INTO Tasks
-(
-ProjectID,
-TaskName,
-AssignedTo,
-CreatedBy,
-Status
-)
-
-VALUES
-(
-1,
-'Build Login',
-2,
-1,
-'IN_PROGRESS'
-),
-
-(
-1,
-'Realtime Sync',
-3,
-1,
-'TODO'
-),
-
-(
-1,
-'Task Manager',
-2,
-1,
-'DONE'
-);
 
 GO
 
@@ -512,41 +390,6 @@ GO
 /*==========================================================
     SAMPLE FILE HISTORY
 ==========================================================*/
-
-INSERT INTO FileHistory
-(
-FileID,
-VersionNo,
-Content,
-EditedBy,
-ChangeSummary
-)
-
-VALUES
-(
-1,
-1,
-'Console.WriteLine("Hello");',
-1,
-'Initial Version'
-),
-
-(
-1,
-2,
-'Console.WriteLine("Hello World");',
-2,
-'Added Hello World'
-),
-
-(
-1,
-3,
-'Console.WriteLine("Collaborative Coding");',
-2,
-'Changed Output'
-);
-
 GO
 
 /*==========================================================
