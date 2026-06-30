@@ -136,6 +136,8 @@ namespace CollaborativeCodingServer.Core.Handlers
             string json = JsonHelper.Serialize(packet);
             foreach (ClientHandler client in clientHandler.CurrentRoom.Clients.ToList())
             {
+                if (client == clientHandler)
+                    continue;
                 if (!client.Send(json))
                 {
                     clientHandler.CurrentRoom.Clients.Remove(client);
