@@ -24,6 +24,7 @@ namespace CollaborativeCodingClient
         private void MainForm_Load(object sender, EventArgs e)
         {
             client.Connect("127.0.0.1", 5000);
+            //client.Connect("10.102.84.5", 5000);
             SetStatus("Socket: connecting to 127.0.0.1:5000", System.Drawing.Color.FromArgb(220, 200, 90));
             AppendLog("Connecting to server at 127.0.0.1:5000...");
         }
@@ -160,6 +161,7 @@ namespace CollaborativeCodingClient
                     break;
 
                 case nameof(PacketType.UNLOCK_FILE_SUCCESS):
+                    txtEditor.ReadOnly = false;
                     lblCurrentFile.Text = "No file opened";
                     client.CurrentFileID = 0;
                     client.CurrentFileContent = string.Empty;
@@ -424,6 +426,11 @@ namespace CollaborativeCodingClient
 
         private void btnSaveFile_Click(object sender, EventArgs e)
         {
+            if (txtEditor.ReadOnly)
+            {
+                MessageBox.Show("This file is locked by another user.", "Read Only", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             if (client.CurrentFileID == 0)
             {
                 AppendLog("No file opened. Open a file first.");
@@ -572,13 +579,25 @@ namespace CollaborativeCodingClient
         {
             SyncFileContentRequest openResponse = JsonHelper.Deserialize<SyncFileContentRequest>(packet.Data);
             txtEditor.Text = openResponse.Content;
-            lblCurrentFile.Text = $"FileID: {openResponse.FileID} | Locked by you";
             client.CurrentFileID = openResponse.FileID;
             client.CurrentFileContent = openResponse.Content;
             txtOpenFileId.Text = openResponse.FileID.ToString();
             txtHistoryFileId.Text = openResponse.FileID.ToString();
+
+            // ===== Phân biệt ReadOnly hay Edit =====
+            if (openResponse.ReadOnly)
+            {
+                txtEditor.ReadOnly = true;
+                lblCurrentFile.Text = $"FileID: {openResponse.FileID} | Read Only";
+                AppendLog("OPEN_FILE (Read Only)");
+            }
+            else
+            {
+                txtEditor.ReadOnly = false;
+                lblCurrentFile.Text = $"FileID: {openResponse.FileID} | Editing";
+                AppendLog("OPEN_FILE (Editable)");
+            }
             tabMain.SelectedTab = tabEditor;
-            AppendLog($"OPEN_FILE FileID={openResponse.FileID}");
         }
 
         private void HandleSyncFile(Packet packet)

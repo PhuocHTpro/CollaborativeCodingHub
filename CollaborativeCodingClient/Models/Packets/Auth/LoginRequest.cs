@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CollaborativeCodingClient.Models.Packets.Auth
 {
-    public class LoginRequest
+    public class LoginRequest // tạo lớp LoginRequest để gửi thông tin đăng nhập từ client đến server
     {
         public string Username { get; set; }
 

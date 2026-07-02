@@ -11,7 +11,7 @@ namespace CollaborativeCodingServer.Core.Handlers
     public class ProjectHandler
     {
         private readonly ClientHandler clientHandler;
-        private readonly ProjectService projectService = new ProjectService();
+        private readonly ProjectService projectService = new ProjectService(); // khai báo biến projectService để xử lý các yêu cầu liên quan đến dự án
         private readonly FileService fileService = new FileService();
         private readonly RoomRepository roomRepository = new RoomRepository();
 
@@ -20,7 +20,7 @@ namespace CollaborativeCodingServer.Core.Handlers
             this.clientHandler = clientHandler;
         }
 
-        public void HandleCreateProject(Packet packet)
+        public void HandleCreateProject(Packet packet) // Xử lý yêu cầu tạo dự án
         {
             if (clientHandler.CurrentUser == null)
             {
@@ -28,27 +28,27 @@ namespace CollaborativeCodingServer.Core.Handlers
                 return;
             }
 
-            CreateProjectRequest request = JsonHelper.Deserialize<CreateProjectRequest>(packet.Data);
-            if (string.IsNullOrWhiteSpace(request.ProjectName) || string.IsNullOrWhiteSpace(request.RoomID))
+            CreateProjectRequest request = JsonHelper.Deserialize<CreateProjectRequest>(packet.Data); // Tuần tự hóa dữ liệu từ gói tin thành đối tượng CreateProjectRequest
+            if (string.IsNullOrWhiteSpace(request.ProjectName) || string.IsNullOrWhiteSpace(request.RoomID)) // Kiểm tra tên dự án và ID phòng có hợp lệ không
             {
                 clientHandler.SendPacket(PacketType.CREATE_PROJECT_FAILED);
                 return;
             }
 
-            bool roomExists = roomRepository.RoomExists(request.RoomID);
-            if (!roomExists)
+            bool roomExists = roomRepository.RoomExists(request.RoomID); // Kiểm tra xem phòng có tồn tại không
+            if (!roomExists) // Nếu phòng không tồn tại, gửi gói tin thất bại
             {
                 clientHandler.SendPacket(PacketType.CREATE_PROJECT_FAILED);
                 return;
             }
-            if (clientHandler.CurrentRoom == null || clientHandler.CurrentRoom.RoomId != request.RoomID)
+            if (clientHandler.CurrentRoom == null || clientHandler.CurrentRoom.RoomId != request.RoomID) // Kiểm tra xem người dùng có đang ở trong phòng đó không
             {
                 clientHandler.SendPacket(PacketType.CREATE_PROJECT_FAILED);
                 return;
             }
 
-            int projectId = projectService.CreateProject(request.ProjectName, request.RoomID, clientHandler.CurrentUser.UserID);
-            if (projectId > 0)
+            int projectId = projectService.CreateProject(request.ProjectName, request.RoomID, clientHandler.CurrentUser.UserID); // Tạo dự án mới và nhận ID dự án
+            if (projectId > 0) // Nếu tạo dự án thành công, gửi gói tin thành công với ID dự án
             {
                 clientHandler.SendPacket(PacketType.CREATE_PROJECT_SUCCESS, projectId.ToString());
             }
@@ -58,7 +58,7 @@ namespace CollaborativeCodingServer.Core.Handlers
             }
         }
 
-        public void HandleUnlockFile(Packet packet)
+        public void HandleUnlockFile(Packet packet) // Xử lý yêu cầu mở khóa file
         {
             if (clientHandler.CurrentUser == null)
             {
@@ -75,7 +75,7 @@ namespace CollaborativeCodingServer.Core.Handlers
             // Kiểm tra file có đang bị lock bởi người dùng này không
             if (FileLockManager.LockedFiles.ContainsKey(fileId) &&
                 FileLockManager.LockedFiles[fileId] == clientHandler.Username)
-            {
+            { // Nếu file đang bị lock bởi người dùng này, mở khóa file
                 FileLockManager.LockedFiles.TryRemove(fileId, out _);
                 if (clientHandler.CurrentFileId == fileId)
                 {
@@ -84,11 +84,11 @@ namespace CollaborativeCodingServer.Core.Handlers
                 Console.WriteLine($"[UNLOCK] File {fileId} unlocked by {clientHandler.Username}");
                 clientHandler.SendPacket(PacketType.UNLOCK_FILE_SUCCESS, fileId.ToString());
             }
-            else if (!FileLockManager.LockedFiles.ContainsKey(fileId))
+            else if (!FileLockManager.LockedFiles.ContainsKey(fileId)) // Nếu file không bị lock, gửi gói tin thất bại với thông báo
             {
                 clientHandler.SendPacket(PacketType.UNLOCK_FILE_FAILED, "File is not locked.");
             }
-            else
+            else // Nếu file đang bị lock bởi người dùng khác, gửi gói tin thất bại với thông báo
             {
                 string owner = FileLockManager.LockedFiles[fileId];
                 clientHandler.SendPacket(PacketType.UNLOCK_FILE_FAILED, $"File is locked by {owner}, not you.");
@@ -96,27 +96,27 @@ namespace CollaborativeCodingServer.Core.Handlers
         }
 
 
-        public void HandleCreateFile(Packet packet)
+        public void HandleCreateFile(Packet packet) // Xử lý yêu cầu tạo file
         {
-            CreateFileRequest request = JsonHelper.Deserialize<CreateFileRequest>(packet.Data);
-            if (clientHandler.CurrentUser == null)
+            CreateFileRequest request = JsonHelper.Deserialize<CreateFileRequest>(packet.Data); // Tuần tự hóa dữ liệu từ gói tin thành đối tượng CreateFileRequest
+            if (clientHandler.CurrentUser == null) // Kiểm tra xem người dùng đã đăng nhập chưa
             {
                 clientHandler.SendPacket(PacketType.CREATE_FILE_FAILED);
                 return;
             }
-            if (request.ProjectID <= 0 || string.IsNullOrWhiteSpace(request.FileName))
+            if (request.ProjectID <= 0 || string.IsNullOrWhiteSpace(request.FileName)) // Kiểm tra xem ID dự án và tên file có hợp lệ không
             {
                 clientHandler.SendPacket(PacketType.CREATE_FILE_FAILED);
                 return;
             }
 
-            if (!projectService.ProjectExists(request.ProjectID))
+            if (!projectService.ProjectExists(request.ProjectID)) // Kiểm tra xem dự án có tồn tại không
             {
                 clientHandler.SendPacket(PacketType.CREATE_FILE_FAILED);
                 return;
             }
-            int fileId = fileService.CreateFile(request.ProjectID, request.FileName, clientHandler.CurrentUser.UserID);
-            if (fileId > 0)
+            int fileId = fileService.CreateFile(request.ProjectID, request.FileName, clientHandler.CurrentUser.UserID); // Tạo file mới và nhận ID file
+            if (fileId > 0) // Nếu tạo file thành công, gửi gói tin thành công với ID file
             {
                 clientHandler.SendPacket(PacketType.CREATE_FILE_SUCCESS, fileId.ToString());
             }
@@ -162,18 +162,23 @@ namespace CollaborativeCodingServer.Core.Handlers
                 clientHandler.SendPacket(PacketType.FILE_NOT_FOUND);
                 return;
             }
+            bool readOnly = false;
             if (!FileLockManager.LockedFiles.TryAdd(request.FileID, clientHandler.Username))
             {
                 string owner = FileLockManager.LockedFiles[request.FileID];
                 if (owner != clientHandler.Username)
                 {
-                    clientHandler.SendPacket(PacketType.FILE_LOCKED, owner);
-                    return;
+                    Console.WriteLine($"[READ ONLY] File locked by {owner}");
+                    readOnly = true;
                 }
             }
             ProjectFile file = fileService.GetFileById(request.FileID);
             if (file == null)
             {
+                if (!readOnly)
+                {
+                    FileLockManager.LockedFiles.TryRemove(request.FileID, out _);
+                }
                 clientHandler.SendPacket(PacketType.FILE_NOT_FOUND);
                 return;
             }
@@ -181,10 +186,11 @@ namespace CollaborativeCodingServer.Core.Handlers
             {
                 FileID = file.FileID,
                 Content = file.Content,
-                Username = clientHandler.Username
+                Username = clientHandler.Username,
+                ReadOnly = readOnly
             };
 
-            clientHandler.CurrentFileId = request.FileID;
+            clientHandler.CurrentFileId = file.FileID;
             clientHandler.SendPacket(PacketType.OPEN_FILE, JsonHelper.Serialize(openResponse));
         }
 
