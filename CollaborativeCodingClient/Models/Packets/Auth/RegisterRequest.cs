@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CollaborativeCodingClient.Models.Packets.Auth
 {
-    public class RegisterRequest
+    public class RegisterRequest // tạo lớp RegisterRequest để gửi thông tin đăng ký từ client đến server
     {
         public string Username { get; set; }
 

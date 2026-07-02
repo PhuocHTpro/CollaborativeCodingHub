@@ -5,7 +5,7 @@ namespace CollaborativeCodingServer.Services
 {
     public class AuthService
     {
-        private readonly UserRepository repository = new UserRepository();
+        private readonly UserRepository repository = new UserRepository(); 
 
         public bool Register(string username, string password)
         {

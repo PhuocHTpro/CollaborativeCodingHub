@@ -13,5 +13,6 @@ namespace CollaborativeCodingServer.Models.Packets.Project
         public string Content { get; set; }
 
         public string Username { get; set; }
+        public bool ReadOnly { get; set; }
     }
 }
